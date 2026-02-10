@@ -1,3 +1,6 @@
 archive/logs/*
 archive/metrics/*
 *.wpilog
+/Lib
+pyvenv.cfg
+/Scripts

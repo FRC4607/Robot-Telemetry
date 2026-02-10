@@ -24,11 +24,12 @@ Sounds like a good deal? Awesome.
 1. Clone this repository onto a computer, preferably one that can stay in your pit for the entire event.
 2. Create a new python venv in the folder:  
 `python -m venv .`
-3. Activate the virtual environment.
+3. Activate the virtual environment using the appropriate script for your OS from the Scripts folder in the venv. For example, on Windows you would run:
+`.\Scripts\Activate.ps1`
 4. Install all of the necessary packages from the requirements.txt file:  
 `pip install -r requirements.txt`
-5. Open the file alembic.ini and change the connection URL (the part after `sqlalchemy.url =`) to match the database you have set up. See the [Dialects](https://docs.sqlalchemy.org/en/20/dialects/index.html) page on SQLAlchemy's website for more info.
-6. Run `alembic upgrade head` to initialize the database.
+1. Open the file alembic.ini and change the connection URL (the part after `sqlalchemy.url =`) to match the database you have set up. See the [Dialects](https://docs.sqlalchemy.org/en/20/dialects/index.html) page on SQLAlchemy's website for more info.
+2. Run `alembic upgrade head` to initialize the database.
 
 ### Grafana Setup
 
