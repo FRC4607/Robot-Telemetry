@@ -34,8 +34,8 @@ def upgrade() -> None:
         sa.Column(
             "id", sa.Integer, primary_key=True, autoincrement=True, nullable=False
         ),
-        sa.Column("file_hash", sa.BINARY(16), nullable=False),
-        sa.Column("metric_hash", sa.BINARY(16), nullable=False),
+        sa.Column("file_hash", sa.LargeBinary(16), nullable=False),
+        sa.Column("metric_hash", sa.LargeBinary(16), nullable=False),
         sa.Column("file_name", sa.Unicode(1024), nullable=False),
         sa.Column("group", sa.Unicode(1024), nullable=False),
         sa.Column("metric", sa.Unicode(1024), nullable=False),
