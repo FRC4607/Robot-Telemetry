@@ -2,6 +2,7 @@ archive/logs/*
 archive/metrics/*
 *.wpilog
 keys.py
+AGENT_ONBOARDING.md
 lib
 pyvenv.cfg
 /Scripts
