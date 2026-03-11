@@ -1,0 +1,1430 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "match-stoplight",
+    "title": "Match Stoplight",
+    "description": "Stoplight health metrics for a specific log file. Select event \u2192 match \u2192 file.",
+    "tags": [
+      "auto-generated",
+      "stoplight",
+      "match"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "editable": true,
+    "graphTooltip": 1,
+    "panels": [
+      {
+        "id": 1,
+        "type": "stat",
+        "title": "Total Warnings",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "ffd8jczdyabr4c"
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "rawSql": "SELECT COUNT(*) FROM metrics WHERE file_name = '${file_name}' AND stoplight >= 1;",
+            "format": "table",
+            "rawQuery": true,
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "orange"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none"
+        }
+      },
+      {
+        "id": 2,
+        "type": "stat",
+        "title": "Red Alerts",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "ffd8jczdyabr4c"
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "rawSql": "SELECT COUNT(*) FROM metrics WHERE file_name = '${file_name}' AND stoplight = 2;",
+            "format": "table",
+            "rawQuery": true,
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "red"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none"
+        }
+      },
+      {
+        "id": 3,
+        "type": "stat",
+        "title": "Yellow Warnings",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "ffd8jczdyabr4c"
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "rawSql": "SELECT COUNT(*) FROM metrics WHERE file_name = '${file_name}' AND stoplight = 1;",
+            "format": "table",
+            "rawQuery": true,
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "yellow"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none"
+        }
+      },
+      {
+        "id": 4,
+        "type": "stat",
+        "title": "Green / OK",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "ffd8jczdyabr4c"
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "rawSql": "SELECT COUNT(*) FROM metrics WHERE file_name = '${file_name}' AND stoplight = 0;",
+            "format": "table",
+            "rawQuery": true,
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "green"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none"
+        }
+      },
+      {
+        "id": 5,
+        "type": "heywesty-trafficlight-panel",
+        "title": "Subsystem Health",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "ffd8jczdyabr4c"
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 24,
+          "x": 0,
+          "y": 4
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "rawSql": "SELECT \"group\" AS metric, MAX(stoplight) AS stoplight\nFROM metrics\nWHERE file_name = '${file_name}'\nGROUP BY \"group\"\nORDER BY \"group\";",
+            "format": "table",
+            "rawQuery": true,
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 1
+                },
+                {
+                  "color": "red",
+                  "value": 2
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "sortLights": true,
+          "showValue": false,
+          "showTrend": false,
+          "greenThreshold": 0,
+          "redThreshold": 2,
+          "max": 2,
+          "invertScale": false,
+          "digits": 0,
+          "spreadControls": true,
+          "renderLink": false
+        }
+      },
+      {
+        "id": 6,
+        "type": "table",
+        "title": "All Warnings & Alerts",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "ffd8jczdyabr4c"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 10
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "rawSql": "SELECT \"group\", metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND stoplight >= 1\nORDER BY stoplight DESC, \"group\", metric;",
+            "format": "table",
+            "rawQuery": true,
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 1
+                },
+                {
+                  "color": "red",
+                  "value": 2
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "stoplight"
+              },
+              "properties": [
+                {
+                  "id": "custom.displayMode",
+                  "value": "color-background"
+                },
+                {
+                  "id": "custom.width",
+                  "value": 80
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "stoplight"
+            }
+          ]
+        }
+      },
+      {
+        "id": 8,
+        "type": "row",
+        "title": "Swerve",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 18
+        },
+        "collapsed": true,
+        "panels": [
+          {
+            "id": 7,
+            "type": "table",
+            "title": "Swerve Metrics",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 24,
+              "x": 0,
+              "y": 19
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "grafana-postgresql-datasource",
+                  "uid": "ffd8jczdyabr4c"
+                },
+                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'swerve'\nORDER BY stoplight DESC, metric;",
+                "format": "table",
+                "rawQuery": true,
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 2
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "stoplight"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.displayMode",
+                      "value": "color-background"
+                    },
+                    {
+                      "id": "custom.width",
+                      "value": 80
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": true,
+                  "displayName": "stoplight"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "type": "row",
+        "title": "Flywheel",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 19
+        },
+        "collapsed": true,
+        "panels": [
+          {
+            "id": 9,
+            "type": "table",
+            "title": "Flywheel Metrics",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 24,
+              "x": 0,
+              "y": 20
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "grafana-postgresql-datasource",
+                  "uid": "ffd8jczdyabr4c"
+                },
+                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'flywheel'\nORDER BY stoplight DESC, metric;",
+                "format": "table",
+                "rawQuery": true,
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 2
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "stoplight"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.displayMode",
+                      "value": "color-background"
+                    },
+                    {
+                      "id": "custom.width",
+                      "value": 80
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": true,
+                  "displayName": "stoplight"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "type": "row",
+        "title": "Turret",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 20
+        },
+        "collapsed": true,
+        "panels": [
+          {
+            "id": 11,
+            "type": "table",
+            "title": "Turret Metrics",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 24,
+              "x": 0,
+              "y": 21
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "grafana-postgresql-datasource",
+                  "uid": "ffd8jczdyabr4c"
+                },
+                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'turret'\nORDER BY stoplight DESC, metric;",
+                "format": "table",
+                "rawQuery": true,
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 2
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "stoplight"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.displayMode",
+                      "value": "color-background"
+                    },
+                    {
+                      "id": "custom.width",
+                      "value": 80
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": true,
+                  "displayName": "stoplight"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "type": "row",
+        "title": "Hood",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 21
+        },
+        "collapsed": true,
+        "panels": [
+          {
+            "id": 13,
+            "type": "table",
+            "title": "Hood Metrics",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 24,
+              "x": 0,
+              "y": 22
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "grafana-postgresql-datasource",
+                  "uid": "ffd8jczdyabr4c"
+                },
+                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'hood'\nORDER BY stoplight DESC, metric;",
+                "format": "table",
+                "rawQuery": true,
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 2
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "stoplight"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.displayMode",
+                      "value": "color-background"
+                    },
+                    {
+                      "id": "custom.width",
+                      "value": 80
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": true,
+                  "displayName": "stoplight"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "type": "row",
+        "title": "Climber",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 22
+        },
+        "collapsed": true,
+        "panels": [
+          {
+            "id": 15,
+            "type": "table",
+            "title": "Climber Metrics",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 24,
+              "x": 0,
+              "y": 23
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "grafana-postgresql-datasource",
+                  "uid": "ffd8jczdyabr4c"
+                },
+                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'climber'\nORDER BY stoplight DESC, metric;",
+                "format": "table",
+                "rawQuery": true,
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 2
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "stoplight"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.displayMode",
+                      "value": "color-background"
+                    },
+                    {
+                      "id": "custom.width",
+                      "value": 80
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": true,
+                  "displayName": "stoplight"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "type": "row",
+        "title": "Intake Arm",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 23
+        },
+        "collapsed": true,
+        "panels": [
+          {
+            "id": 17,
+            "type": "table",
+            "title": "Intake Arm Metrics",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 24,
+              "x": 0,
+              "y": 24
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "grafana-postgresql-datasource",
+                  "uid": "ffd8jczdyabr4c"
+                },
+                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'intake_arm'\nORDER BY stoplight DESC, metric;",
+                "format": "table",
+                "rawQuery": true,
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 2
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "stoplight"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.displayMode",
+                      "value": "color-background"
+                    },
+                    {
+                      "id": "custom.width",
+                      "value": 80
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": true,
+                  "displayName": "stoplight"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "type": "row",
+        "title": "Intake Wheels",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 24
+        },
+        "collapsed": true,
+        "panels": [
+          {
+            "id": 19,
+            "type": "table",
+            "title": "Intake Wheels Metrics",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 24,
+              "x": 0,
+              "y": 25
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "grafana-postgresql-datasource",
+                  "uid": "ffd8jczdyabr4c"
+                },
+                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'intake_wheels'\nORDER BY stoplight DESC, metric;",
+                "format": "table",
+                "rawQuery": true,
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 2
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "stoplight"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.displayMode",
+                      "value": "color-background"
+                    },
+                    {
+                      "id": "custom.width",
+                      "value": 80
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": true,
+                  "displayName": "stoplight"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": 22,
+        "type": "row",
+        "title": "Indexer",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 25
+        },
+        "collapsed": true,
+        "panels": [
+          {
+            "id": 21,
+            "type": "table",
+            "title": "Indexer Metrics",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 24,
+              "x": 0,
+              "y": 26
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "grafana-postgresql-datasource",
+                  "uid": "ffd8jczdyabr4c"
+                },
+                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'indexer'\nORDER BY stoplight DESC, metric;",
+                "format": "table",
+                "rawQuery": true,
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 2
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "stoplight"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.displayMode",
+                      "value": "color-background"
+                    },
+                    {
+                      "id": "custom.width",
+                      "value": 80
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": true,
+                  "displayName": "stoplight"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": 24,
+        "type": "row",
+        "title": "Chamber",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 26
+        },
+        "collapsed": true,
+        "panels": [
+          {
+            "id": 23,
+            "type": "table",
+            "title": "Chamber Metrics",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 24,
+              "x": 0,
+              "y": 27
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "grafana-postgresql-datasource",
+                  "uid": "ffd8jczdyabr4c"
+                },
+                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'chamber'\nORDER BY stoplight DESC, metric;",
+                "format": "table",
+                "rawQuery": true,
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 2
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "stoplight"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.displayMode",
+                      "value": "color-background"
+                    },
+                    {
+                      "id": "custom.width",
+                      "value": 80
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": true,
+                  "displayName": "stoplight"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": 26,
+        "type": "row",
+        "title": "Power",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 27
+        },
+        "collapsed": true,
+        "panels": [
+          {
+            "id": 25,
+            "type": "table",
+            "title": "Power Metrics",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 24,
+              "x": 0,
+              "y": 28
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "grafana-postgresql-datasource",
+                  "uid": "ffd8jczdyabr4c"
+                },
+                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'power'\nORDER BY stoplight DESC, metric;",
+                "format": "table",
+                "rawQuery": true,
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 2
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "stoplight"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.displayMode",
+                      "value": "color-background"
+                    },
+                    {
+                      "id": "custom.width",
+                      "value": 80
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": true,
+                  "displayName": "stoplight"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": 28,
+        "type": "row",
+        "title": "Imu",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 28
+        },
+        "collapsed": true,
+        "panels": [
+          {
+            "id": 27,
+            "type": "table",
+            "title": "Imu Metrics",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "ffd8jczdyabr4c"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 24,
+              "x": 0,
+              "y": 29
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "grafana-postgresql-datasource",
+                  "uid": "ffd8jczdyabr4c"
+                },
+                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'imu'\nORDER BY stoplight DESC, metric;",
+                "format": "table",
+                "rawQuery": true,
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 2
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "stoplight"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.displayMode",
+                      "value": "color-background"
+                    },
+                    {
+                      "id": "custom.width",
+                      "value": 80
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": true,
+                  "displayName": "stoplight"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "event_key",
+          "label": "Event",
+          "type": "query",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
+          },
+          "query": "SELECT DISTINCT event_key FROM metrics ORDER BY event_key;",
+          "refresh": 1,
+          "multi": false,
+          "includeAll": false,
+          "sort": 1
+        },
+        {
+          "name": "match_info",
+          "label": "Match",
+          "type": "query",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
+          },
+          "query": "SELECT DISTINCT match_info FROM metrics WHERE event_key = '${event_key}' ORDER BY match_info;",
+          "refresh": 1,
+          "multi": false,
+          "includeAll": false,
+          "sort": 1
+        },
+        {
+          "name": "file_name",
+          "label": "Log File",
+          "type": "query",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
+          },
+          "query": "SELECT DISTINCT file_name FROM metrics WHERE event_key = '${event_key}' AND match_info = '${match_info}' ORDER BY file_name DESC;",
+          "refresh": 1,
+          "multi": false,
+          "includeAll": false,
+          "sort": 1
+        }
+      ]
+    },
+    "time": {
+      "from": "now-90d",
+      "to": "now"
+    },
+    "refresh": ""
+  },
+  "overwrite": true
+}

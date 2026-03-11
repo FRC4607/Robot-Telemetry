@@ -1,0 +1,313 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "signal-explorer",
+    "title": "Signal Explorer",
+    "description": "Explore any raw signal from InfluxDB. Select log file \u2192 device type \u2192 device ID \u2192 signal.",
+    "tags": [
+      "auto-generated",
+      "influxdb",
+      "explorer"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "editable": true,
+    "graphTooltip": 1,
+    "panels": [
+      {
+        "id": 1,
+        "type": "timeseries",
+        "title": "Signals: ${device_id:text} / ${signal}",
+        "datasource": {
+          "type": "influxdb",
+          "uid": "fffnbhv0kdukgc"
+        },
+        "gridPos": {
+          "h": 12,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fffnbhv0kdukgc"
+            },
+            "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"${device_type}\")\n  |> filter(fn: (r) => (r.device_type + \"-\" + r.device_id) =~ /^(${device_id:regex})$/)\n  |> filter(fn: (r) => r.signal =~ /^(${signal:regex})$/)\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: (if r.device_type + \"-\" + r.device_id == \"TalonFX-1\" then \"FL Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-3\" then \"FL Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-3\" then \"FL Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-40\" then \"FR Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-28\" then \"FR Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-2\" then \"FR Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-18\" then \"BL Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-16\" then \"BL Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-16\" then \"BL Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-19\" then \"BR Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-17\" then \"BR Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-17\" then \"BR Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-48\" then \"Intake Arm\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-24\" then \"Intake Arm Enc\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-45\" then \"Intake Wheels\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-26\" then \"Indexer\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-55\" then \"Chamber\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-32\" then \"Turret\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-50\" then \"Turret Enc 1\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-51\" then \"Turret Enc 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-52\" then \"Hood\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-50\" then \"Flywheel 1\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-51\" then \"Flywheel 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-23\" then \"Climber Outer 1\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-6\" then \"Climber Outer 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-15\" then \"Climber Inner 1\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-56\" then \"Climber Inner 2\" else if r.device_type + \"-\" + r.device_id == \"Pigeon2-0\" then \"Pigeon2 IMU\" else r.device_type + \"-\" + r.device_id) + \" - \" + r.signal}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "",
+            "custom": {
+              "lineWidth": 1,
+              "fillOpacity": 10,
+              "spanNulls": true,
+              "axisBorderShow": false
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "file",
+          "label": "Log File",
+          "type": "query",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "fffnbhv0kdukgc"
+          },
+          "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"robot-telemetry\", tag: \"file\", predicate: (r) => r._measurement == \"_upload_tracking\")",
+          "refresh": 1,
+          "multi": false,
+          "hide": 0,
+          "includeAll": false,
+          "sort": 1
+        },
+        {
+          "name": "file_start",
+          "label": "File Start",
+          "type": "query",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "fffnbhv0kdukgc"
+          },
+          "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\" and r.file == \"${file}\" and r._field == \"value\")\n  |> keep(columns: [\"_time\"])\n  |> group()\n  |> min(column: \"_time\")\n  |> map(fn: (r) => ({_value: string(v: r._time)}))",
+          "refresh": 1,
+          "multi": false,
+          "hide": 2,
+          "includeAll": false,
+          "sort": 1
+        },
+        {
+          "name": "file_end",
+          "label": "File End",
+          "type": "query",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "fffnbhv0kdukgc"
+          },
+          "query": "import \"experimental\"\nfrom(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\" and r.file == \"${file}\" and r._field == \"value\")\n  |> keep(columns: [\"_time\"])\n  |> group()\n  |> max(column: \"_time\")\n  |> map(fn: (r) => ({_value: string(v: experimental.addDuration(d: 1s, to: r._time))}))",
+          "refresh": 1,
+          "multi": false,
+          "hide": 2,
+          "includeAll": false,
+          "sort": 1
+        },
+        {
+          "name": "device_type",
+          "label": "Device Type",
+          "type": "query",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "fffnbhv0kdukgc"
+          },
+          "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"robot-telemetry\", tag: \"device_type\", predicate: (r) => r._measurement == \"robot_telemetry\")",
+          "refresh": 1,
+          "multi": false,
+          "hide": 0,
+          "includeAll": false,
+          "sort": 1
+        },
+        {
+          "name": "device_id",
+          "label": "Device",
+          "type": "custom",
+          "query": "BL Drive : TalonFX-18,BL Encoder : CANcoder-16,BL Steer : TalonFX-16,BR Drive : TalonFX-19,BR Encoder : CANcoder-17,BR Steer : TalonFX-17,Chamber : TalonFX-55,Climber Inner 1 : TalonFX-15,Climber Inner 2 : TalonFX-56,Climber Outer 1 : TalonFX-23,Climber Outer 2 : TalonFX-6,FL Drive : TalonFX-1,FL Encoder : CANcoder-3,FL Steer : TalonFX-3,FR Drive : TalonFX-40,FR Encoder : CANcoder-2,FR Steer : TalonFX-28,Flywheel 1 : TalonFX-50,Flywheel 2 : TalonFX-51,Hood : TalonFX-52,Indexer : TalonFX-26,Intake Arm : TalonFX-48,Intake Arm Enc : CANcoder-24,Intake Wheels : TalonFX-45,Pigeon2 IMU : Pigeon2-0,Turret : TalonFX-32,Turret Enc 1 : CANcoder-50,Turret Enc 2 : CANcoder-51",
+          "options": [
+            {
+              "text": "All",
+              "value": "$__all",
+              "selected": true
+            },
+            {
+              "text": "BL Drive",
+              "value": "TalonFX-18",
+              "selected": false
+            },
+            {
+              "text": "BL Encoder",
+              "value": "CANcoder-16",
+              "selected": false
+            },
+            {
+              "text": "BL Steer",
+              "value": "TalonFX-16",
+              "selected": false
+            },
+            {
+              "text": "BR Drive",
+              "value": "TalonFX-19",
+              "selected": false
+            },
+            {
+              "text": "BR Encoder",
+              "value": "CANcoder-17",
+              "selected": false
+            },
+            {
+              "text": "BR Steer",
+              "value": "TalonFX-17",
+              "selected": false
+            },
+            {
+              "text": "Chamber",
+              "value": "TalonFX-55",
+              "selected": false
+            },
+            {
+              "text": "Climber Inner 1",
+              "value": "TalonFX-15",
+              "selected": false
+            },
+            {
+              "text": "Climber Inner 2",
+              "value": "TalonFX-56",
+              "selected": false
+            },
+            {
+              "text": "Climber Outer 1",
+              "value": "TalonFX-23",
+              "selected": false
+            },
+            {
+              "text": "Climber Outer 2",
+              "value": "TalonFX-6",
+              "selected": false
+            },
+            {
+              "text": "FL Drive",
+              "value": "TalonFX-1",
+              "selected": false
+            },
+            {
+              "text": "FL Encoder",
+              "value": "CANcoder-3",
+              "selected": false
+            },
+            {
+              "text": "FL Steer",
+              "value": "TalonFX-3",
+              "selected": false
+            },
+            {
+              "text": "FR Drive",
+              "value": "TalonFX-40",
+              "selected": false
+            },
+            {
+              "text": "FR Encoder",
+              "value": "CANcoder-2",
+              "selected": false
+            },
+            {
+              "text": "FR Steer",
+              "value": "TalonFX-28",
+              "selected": false
+            },
+            {
+              "text": "Flywheel 1",
+              "value": "TalonFX-50",
+              "selected": false
+            },
+            {
+              "text": "Flywheel 2",
+              "value": "TalonFX-51",
+              "selected": false
+            },
+            {
+              "text": "Hood",
+              "value": "TalonFX-52",
+              "selected": false
+            },
+            {
+              "text": "Indexer",
+              "value": "TalonFX-26",
+              "selected": false
+            },
+            {
+              "text": "Intake Arm",
+              "value": "TalonFX-48",
+              "selected": false
+            },
+            {
+              "text": "Intake Arm Enc",
+              "value": "CANcoder-24",
+              "selected": false
+            },
+            {
+              "text": "Intake Wheels",
+              "value": "TalonFX-45",
+              "selected": false
+            },
+            {
+              "text": "Pigeon2 IMU",
+              "value": "Pigeon2-0",
+              "selected": false
+            },
+            {
+              "text": "Turret",
+              "value": "TalonFX-32",
+              "selected": false
+            },
+            {
+              "text": "Turret Enc 1",
+              "value": "CANcoder-50",
+              "selected": false
+            },
+            {
+              "text": "Turret Enc 2",
+              "value": "CANcoder-51",
+              "selected": false
+            }
+          ],
+          "current": {
+            "text": "All",
+            "value": "$__all",
+            "selected": true
+          },
+          "refresh": 0,
+          "multi": true,
+          "includeAll": true,
+          "sort": 0
+        },
+        {
+          "name": "signal",
+          "label": "Signal",
+          "type": "query",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "fffnbhv0kdukgc"
+          },
+          "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"${device_type}\")\n  |> keep(columns: [\"signal\"])\n  |> group()\n  |> distinct(column: \"signal\")",
+          "refresh": 1,
+          "multi": true,
+          "hide": 0,
+          "includeAll": true,
+          "sort": 1
+        }
+      ]
+    },
+    "time": {
+      "from": "now-90d",
+      "to": "now"
+    },
+    "refresh": ""
+  },
+  "overwrite": true
+}
