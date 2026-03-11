@@ -1,6 +1,7 @@
 archive/logs/*
 archive/metrics/*
 *.wpilog
+keys.py
 lib
 pyvenv.cfg
 /Scripts
@@ -16,3 +17,4 @@ activate*
 Activate*
 __pycache__
 input-logs
+robot-logs
