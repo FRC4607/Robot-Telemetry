@@ -25,14 +25,14 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 5,
+  "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
     {
       "datasource": {
-        "type": "mysql",
-        "uid": "dvspn704k"
+        "type": "grafana",
+        "uid": "-- Grafana --"
       },
       "gridPos": {
         "h": 4,
@@ -79,8 +79,8 @@
     },
     {
       "datasource": {
-        "type": "mysql",
-        "uid": "dvspn704k"
+        "type": "grafana",
+        "uid": "-- Grafana --"
       },
       "description": "Stop work and begin queueing at this time.",
       "gridPos": {
@@ -129,8 +129,8 @@
     },
     {
       "datasource": {
-        "type": "mysql",
-        "uid": "dvspn704k"
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffd8jczdyabr4c"
       },
       "gridPos": {
         "h": 8,
@@ -141,69 +141,58 @@
       "id": 4,
       "targets": [
         {
-          "dataset": "garbage",
           "datasource": {
-            "type": "mysql",
-            "uid": "dvspn704k"
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
           },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT `group`, MAX(stoplight) FROM garbage.metrics WHERE UNIX_TIMESTAMP(log_timestamp) = ${Timestamp} GROUP BY `group`, log_timestamp LIMIT 50",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "group",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "metrics"
+          "rawSql": "SELECT \"group\", MAX(stoplight) FROM metrics WHERE EXTRACT(EPOCH FROM log_timestamp) = ${Timestamp} GROUP BY \"group\", log_timestamp LIMIT 50",
+          "refId": "A"
         }
       ],
       "title": "Metrics",
-      "trafficLightSettings": {
-        "digits": 1,
-        "fontColor": "#ccccdc",
-        "fontSize": "36px",
-        "greenThreshold": 0,
-        "invertScale": true,
-        "lightsPerLine": 5,
-        "linkTargetBlank": false,
-        "linkTooltip": "",
-        "linkUrl": "",
-        "max": 100,
-        "noValueNumber": -1,
-        "redThreshold": 2,
-        "renderLink": false,
-        "showTrend": false,
+      "type": "heywesty-trafficlight-panel",
+      "options": {
+        "sortLights": true,
         "showValue": false,
-        "sortLights": false,
+        "showTrend": false,
+        "greenThreshold": 0,
+        "redThreshold": 2,
+        "max": 2,
+        "invertScale": true,
+        "digits": 0,
         "spreadControls": true,
-        "units": "",
-        "width": 60
+        "renderLink": false
       },
-      "type": "snuids-trafficlights-panel"
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
     },
     {
       "datasource": {
-        "type": "mysql",
-        "uid": "dvspn704k"
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffd8jczdyabr4c"
       },
       "fieldConfig": {
         "defaults": {
@@ -320,677 +309,57 @@
       "pluginVersion": "9.3.6",
       "targets": [
         {
-          "dataset": "garbage",
           "datasource": {
-            "type": "mysql",
-            "uid": "dvspn704k"
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
           },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT metric as 'Metric', stoplight as 'Stoplight', value as 'Value' FROM garbage.metrics WHERE `group` = 'swerve' AND UNIX_TIMESTAMP(log_timestamp) = ${Timestamp} AND stoplight >= 1 GROUP BY metric, value, stoplight LIMIT 50",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "metric",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "parameters": [
-                  {
-                    "name": "stoplight",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50,
-            "whereJsonTree": {
-              "children1": [
-                {
-                  "id": "a8ba888b-89ab-4cde-b012-318604f2cd8f",
-                  "properties": {
-                    "field": "group",
-                    "operator": "equal",
-                    "value": [
-                      "roborio"
-                    ],
-                    "valueSrc": [
-                      "value"
-                    ],
-                    "valueType": [
-                      "text"
-                    ]
-                  },
-                  "type": "rule"
-                }
-              ],
-              "id": "a98a98ab-89ab-4cde-b012-318604d2bb2e",
-              "type": "group"
-            },
-            "whereString": "group = 'roborio'"
-          },
-          "table": "metrics"
+          "rawSql": "SELECT metric AS \"Metric\", stoplight AS \"Stoplight\", value AS \"Value\" FROM metrics WHERE \"group\" = 'swerve' AND EXTRACT(EPOCH FROM log_timestamp) = ${Timestamp} AND stoplight >= 1 GROUP BY metric, value, stoplight LIMIT 50",
+          "refId": "A"
         }
       ],
       "title": "Swerve Warnings",
       "type": "table"
     },
     {
-      "datasource": {
-        "type": "mysql",
-        "uid": "dvspn704k"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "green",
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "displayMode": "auto",
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "transparent",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "#EAB839",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 2
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Stoplight"
-            },
-            "properties": [
-              {
-                "id": "custom.displayMode",
-                "value": "color-background-solid"
-              },
-              {
-                "id": "custom.width",
-                "value": 29
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "MAX(metric_timestamp)"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Value"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 181
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Metric"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 221
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 8,
-        "y": 12
-      },
-      "id": 9,
-      "options": {
-        "footer": {
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Stoplight"
-          }
-        ]
-      },
-      "pluginVersion": "9.3.6",
-      "targets": [
-        {
-          "dataset": "garbage",
-          "datasource": {
-            "type": "mysql",
-            "uid": "dvspn704k"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT metric as 'Metric', stoplight as 'Stoplight', value as 'Value' FROM garbage.metrics WHERE `group` = 'roborio' AND UNIX_TIMESTAMP(log_timestamp) = ${Timestamp} AND stoplight >= 1 GROUP BY metric, value, stoplight LIMIT 50",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "metric",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "parameters": [
-                  {
-                    "name": "stoplight",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50,
-            "whereJsonTree": {
-              "children1": [
-                {
-                  "id": "a8ba888b-89ab-4cde-b012-318604f2cd8f",
-                  "properties": {
-                    "field": "group",
-                    "operator": "equal",
-                    "value": [
-                      "roborio"
-                    ],
-                    "valueSrc": [
-                      "value"
-                    ],
-                    "valueType": [
-                      "text"
-                    ]
-                  },
-                  "type": "rule"
-                }
-              ],
-              "id": "a98a98ab-89ab-4cde-b012-318604d2bb2e",
-              "type": "group"
-            },
-            "whereString": "group = 'roborio'"
-          },
-          "table": "metrics"
-        }
-      ],
-      "title": "RoboRIO Warnings",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "mysql",
-        "uid": "dvspn704k"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "green",
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "displayMode": "auto",
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "transparent",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "#EAB839",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 2
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Stoplight"
-            },
-            "properties": [
-              {
-                "id": "custom.displayMode",
-                "value": "color-background-solid"
-              },
-              {
-                "id": "custom.width",
-                "value": 20
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "MAX(metric_timestamp)"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Value"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 177
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Metric"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 221
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 16,
-        "y": 12
-      },
-      "id": 11,
-      "options": {
-        "footer": {
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Stoplight"
-          }
-        ]
-      },
-      "pluginVersion": "9.3.6",
-      "targets": [
-        {
-          "dataset": "garbage",
-          "datasource": {
-            "type": "mysql",
-            "uid": "dvspn704k"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT metric as 'Metric', stoplight as 'Stoplight', value as 'Value' FROM garbage.metrics WHERE `group` = 'pdh' AND UNIX_TIMESTAMP(log_timestamp) = ${Timestamp} AND stoplight >= 1 GROUP BY metric, value, stoplight LIMIT 50",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "metric",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "parameters": [
-                  {
-                    "name": "stoplight",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50,
-            "whereJsonTree": {
-              "children1": [
-                {
-                  "id": "a8ba888b-89ab-4cde-b012-318604f2cd8f",
-                  "properties": {
-                    "field": "group",
-                    "operator": "equal",
-                    "value": [
-                      "roborio"
-                    ],
-                    "valueSrc": [
-                      "value"
-                    ],
-                    "valueType": [
-                      "text"
-                    ]
-                  },
-                  "type": "rule"
-                }
-              ],
-              "id": "a98a98ab-89ab-4cde-b012-318604d2bb2e",
-              "type": "group"
-            },
-            "whereString": "group = 'roborio'"
-          },
-          "table": "metrics"
-        }
-      ],
-      "title": "PDH Warnings",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "mysql",
-        "uid": "dvspn704k"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "green",
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "displayMode": "auto",
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "transparent",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "#EAB839",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 2
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Stoplight"
-            },
-            "properties": [
-              {
-                "id": "custom.displayMode",
-                "value": "color-background-solid"
-              },
-              {
-                "id": "custom.width",
-                "value": 33
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "MAX(metric_timestamp)"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Value"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 178
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Metric"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 221
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 0,
-        "y": 19
-      },
       "id": 16,
-      "options": {
-        "footer": {
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Stoplight"
-          }
-        ]
+      "type": "table",
+      "title": "Flywheel Warnings",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffd8jczdyabr4c"
       },
-      "pluginVersion": "9.3.6",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
       "targets": [
         {
-          "dataset": "garbage",
           "datasource": {
-            "type": "mysql",
-            "uid": "dvspn704k"
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
           },
-          "editorMode": "code",
+          "rawSql": "SELECT metric AS \"Metric\", stoplight AS \"Stoplight\", value AS \"Value\" FROM metrics WHERE \"group\" = 'flywheel' AND EXTRACT(EPOCH FROM log_timestamp) = ${Timestamp} AND stoplight >= 1 ORDER BY stoplight DESC, metric LIMIT 50",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT metric as 'Metric', stoplight as 'Stoplight', value as 'Value' FROM garbage.metrics WHERE `group` = 'elevator' AND UNIX_TIMESTAMP(log_timestamp) = ${Timestamp} AND stoplight >= 1 GROUP BY metric, value, stoplight LIMIT 50",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "metric",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "parameters": [
-                  {
-                    "name": "stoplight",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50,
-            "whereJsonTree": {
-              "children1": [
-                {
-                  "id": "a8ba888b-89ab-4cde-b012-318604f2cd8f",
-                  "properties": {
-                    "field": "group",
-                    "operator": "equal",
-                    "value": [
-                      "roborio"
-                    ],
-                    "valueSrc": [
-                      "value"
-                    ],
-                    "valueType": [
-                      "text"
-                    ]
-                  },
-                  "type": "rule"
-                }
-              ],
-              "id": "a98a98ab-89ab-4cde-b012-318604d2bb2e",
-              "type": "group"
-            },
-            "whereString": "group = 'roborio'"
-          },
-          "table": "metrics"
+          "refId": "A"
         }
       ],
-      "title": "Elevator Warnings",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "mysql",
-        "uid": "dvspn704k"
-      },
       "fieldConfig": {
         "defaults": {
           "color": {
-            "fixedColor": "green",
             "mode": "thresholds"
           },
-          "custom": {
-            "align": "auto",
-            "displayMode": "auto",
-            "inspect": false
-          },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "transparent",
-                "value": null
-              },
-              {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -1012,176 +381,63 @@
             "properties": [
               {
                 "id": "custom.displayMode",
-                "value": "color-background-solid"
+                "value": "color-background"
               },
               {
                 "id": "custom.width",
-                "value": 33
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "MAX(metric_timestamp)"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Value"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 178
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Metric"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 221
+                "value": 80
               }
             ]
           }
         ]
       },
-      "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 8,
-        "y": 19
-      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Stoplight"
+          }
+        ]
+      }
+    },
+    {
       "id": 17,
-      "options": {
-        "footer": {
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Stoplight"
-          }
-        ]
+      "type": "table",
+      "title": "Turret Warnings",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffd8jczdyabr4c"
       },
-      "pluginVersion": "9.3.6",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
       "targets": [
         {
-          "dataset": "garbage",
           "datasource": {
-            "type": "mysql",
-            "uid": "dvspn704k"
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
           },
-          "editorMode": "code",
+          "rawSql": "SELECT metric AS \"Metric\", stoplight AS \"Stoplight\", value AS \"Value\" FROM metrics WHERE \"group\" = 'turret' AND EXTRACT(EPOCH FROM log_timestamp) = ${Timestamp} AND stoplight >= 1 ORDER BY stoplight DESC, metric LIMIT 50",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT metric as 'Metric', stoplight as 'Stoplight', value as 'Value' FROM garbage.metrics WHERE `group` = 'arm' AND UNIX_TIMESTAMP(log_timestamp) = ${Timestamp} AND stoplight >= 1 GROUP BY metric, value, stoplight LIMIT 50",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "metric",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "parameters": [
-                  {
-                    "name": "stoplight",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50,
-            "whereJsonTree": {
-              "children1": [
-                {
-                  "id": "a8ba888b-89ab-4cde-b012-318604f2cd8f",
-                  "properties": {
-                    "field": "group",
-                    "operator": "equal",
-                    "value": [
-                      "roborio"
-                    ],
-                    "valueSrc": [
-                      "value"
-                    ],
-                    "valueType": [
-                      "text"
-                    ]
-                  },
-                  "type": "rule"
-                }
-              ],
-              "id": "a98a98ab-89ab-4cde-b012-318604d2bb2e",
-              "type": "group"
-            },
-            "whereString": "group = 'roborio'"
-          },
-          "table": "metrics"
+          "refId": "A"
         }
       ],
-      "title": "Arm Warnings",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "mysql",
-        "uid": "dvspn704k"
-      },
       "fieldConfig": {
         "defaults": {
           "color": {
-            "fixedColor": "green",
             "mode": "thresholds"
           },
-          "custom": {
-            "align": "auto",
-            "displayMode": "auto",
-            "inspect": false
-          },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "transparent",
-                "value": null
-              },
-              {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -1203,67 +459,17 @@
             "properties": [
               {
                 "id": "custom.displayMode",
-                "value": "color-background-solid"
+                "value": "color-background"
               },
               {
                 "id": "custom.width",
-                "value": 33
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "MAX(metric_timestamp)"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Value"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 178
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Metric"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 221
+                "value": 80
               }
             ]
           }
         ]
       },
-      "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 16,
-        "y": 19
-      },
-      "id": 18,
       "options": {
-        "footer": {
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
         "showHeader": true,
         "sortBy": [
           {
@@ -1271,108 +477,659 @@
             "displayName": "Stoplight"
           }
         ]
+      }
+    },
+    {
+      "id": 18,
+      "type": "table",
+      "title": "Hood Warnings",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffd8jczdyabr4c"
       },
-      "pluginVersion": "9.3.6",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
       "targets": [
         {
-          "dataset": "garbage",
           "datasource": {
-            "type": "mysql",
-            "uid": "dvspn704k"
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
           },
-          "editorMode": "code",
+          "rawSql": "SELECT metric AS \"Metric\", stoplight AS \"Stoplight\", value AS \"Value\" FROM metrics WHERE \"group\" = 'hood' AND EXTRACT(EPOCH FROM log_timestamp) = ${Timestamp} AND stoplight >= 1 ORDER BY stoplight DESC, metric LIMIT 50",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT metric as 'Metric', stoplight as 'Stoplight', value as 'Value' FROM garbage.metrics WHERE `group` = 'manipulator' AND UNIX_TIMESTAMP(log_timestamp) = ${Timestamp} AND stoplight >= 1 GROUP BY metric, value, stoplight LIMIT 50",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "metric",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "parameters": [
-                  {
-                    "name": "stoplight",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50,
-            "whereJsonTree": {
-              "children1": [
-                {
-                  "id": "a8ba888b-89ab-4cde-b012-318604f2cd8f",
-                  "properties": {
-                    "field": "group",
-                    "operator": "equal",
-                    "value": [
-                      "roborio"
-                    ],
-                    "valueSrc": [
-                      "value"
-                    ],
-                    "valueType": [
-                      "text"
-                    ]
-                  },
-                  "type": "rule"
-                }
-              ],
-              "id": "a98a98ab-89ab-4cde-b012-318604d2bb2e",
-              "type": "group"
-            },
-            "whereString": "group = 'roborio'"
-          },
-          "table": "metrics"
+          "refId": "A"
         }
       ],
-      "title": "Manipulator Warnings",
-      "type": "table"
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Stoplight"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Stoplight"
+          }
+        ]
+      }
+    },
+    {
+      "id": 19,
+      "type": "table",
+      "title": "Climber Warnings",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffd8jczdyabr4c"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
+          },
+          "rawSql": "SELECT metric AS \"Metric\", stoplight AS \"Stoplight\", value AS \"Value\" FROM metrics WHERE \"group\" = 'climber' AND EXTRACT(EPOCH FROM log_timestamp) = ${Timestamp} AND stoplight >= 1 ORDER BY stoplight DESC, metric LIMIT 50",
+          "format": "table",
+          "rawQuery": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Stoplight"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Stoplight"
+          }
+        ]
+      }
+    },
+    {
+      "id": 20,
+      "type": "table",
+      "title": "Intake Arm Warnings",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffd8jczdyabr4c"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
+          },
+          "rawSql": "SELECT metric AS \"Metric\", stoplight AS \"Stoplight\", value AS \"Value\" FROM metrics WHERE \"group\" = 'intake_arm' AND EXTRACT(EPOCH FROM log_timestamp) = ${Timestamp} AND stoplight >= 1 ORDER BY stoplight DESC, metric LIMIT 50",
+          "format": "table",
+          "rawQuery": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Stoplight"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Stoplight"
+          }
+        ]
+      }
+    },
+    {
+      "id": 21,
+      "type": "table",
+      "title": "Intake Wheels Warnings",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffd8jczdyabr4c"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 57
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
+          },
+          "rawSql": "SELECT metric AS \"Metric\", stoplight AS \"Stoplight\", value AS \"Value\" FROM metrics WHERE \"group\" = 'intake_wheels' AND EXTRACT(EPOCH FROM log_timestamp) = ${Timestamp} AND stoplight >= 1 ORDER BY stoplight DESC, metric LIMIT 50",
+          "format": "table",
+          "rawQuery": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Stoplight"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Stoplight"
+          }
+        ]
+      }
+    },
+    {
+      "id": 22,
+      "type": "table",
+      "title": "Indexer Warnings",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffd8jczdyabr4c"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 66
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
+          },
+          "rawSql": "SELECT metric AS \"Metric\", stoplight AS \"Stoplight\", value AS \"Value\" FROM metrics WHERE \"group\" = 'indexer' AND EXTRACT(EPOCH FROM log_timestamp) = ${Timestamp} AND stoplight >= 1 ORDER BY stoplight DESC, metric LIMIT 50",
+          "format": "table",
+          "rawQuery": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Stoplight"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Stoplight"
+          }
+        ]
+      }
+    },
+    {
+      "id": 23,
+      "type": "table",
+      "title": "Chamber Warnings",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffd8jczdyabr4c"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 75
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
+          },
+          "rawSql": "SELECT metric AS \"Metric\", stoplight AS \"Stoplight\", value AS \"Value\" FROM metrics WHERE \"group\" = 'chamber' AND EXTRACT(EPOCH FROM log_timestamp) = ${Timestamp} AND stoplight >= 1 ORDER BY stoplight DESC, metric LIMIT 50",
+          "format": "table",
+          "rawQuery": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Stoplight"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Stoplight"
+          }
+        ]
+      }
+    },
+    {
+      "id": 24,
+      "type": "table",
+      "title": "Power Warnings",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffd8jczdyabr4c"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 84
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
+          },
+          "rawSql": "SELECT metric AS \"Metric\", stoplight AS \"Stoplight\", value AS \"Value\" FROM metrics WHERE \"group\" = 'power' AND EXTRACT(EPOCH FROM log_timestamp) = ${Timestamp} AND stoplight >= 1 ORDER BY stoplight DESC, metric LIMIT 50",
+          "format": "table",
+          "rawQuery": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Stoplight"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Stoplight"
+          }
+        ]
+      }
+    },
+    {
+      "id": 25,
+      "type": "table",
+      "title": "Imu Warnings",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffd8jczdyabr4c"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 93
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffd8jczdyabr4c"
+          },
+          "rawSql": "SELECT metric AS \"Metric\", stoplight AS \"Stoplight\", value AS \"Value\" FROM metrics WHERE \"group\" = 'imu' AND EXTRACT(EPOCH FROM log_timestamp) = ${Timestamp} AND stoplight >= 1 ORDER BY stoplight DESC, metric LIMIT 50",
+          "format": "table",
+          "rawQuery": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Stoplight"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Stoplight"
+          }
+        ]
+      }
     }
   ],
   "refresh": false,
-  "schemaVersion": 37,
+  "schemaVersion": 39,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
         "current": {
-          "selected": false,
-          "text": "Apr 17th 2023, 14:42:30",
-          "value": "1681760550"
+          "selected": true,
+          "text": "Mar 06 2026, 00:44:31",
+          "value": "1772757871"
         },
         "datasource": {
-          "type": "mysql",
-          "uid": "dvspn704k"
+          "type": "grafana-postgresql-datasource",
+          "uid": "ffd8jczdyabr4c"
         },
-        "definition": "SELECT CONCAT('[', DATE_FORMAT(log_timestamp, '%b %D %Y, %T'), ']', '(', UNIX_TIMESTAMP(log_timestamp), ')') FROM garbage.metrics;",
+        "definition": "SELECT EXTRACT(EPOCH FROM log_timestamp)::bigint AS __value, TO_CHAR(log_timestamp, 'Mon DD YYYY, HH24:MI:SS') AS __text FROM metrics GROUP BY log_timestamp ORDER BY log_timestamp DESC;",
         "description": "The time at which you want the metrics to come from.",
         "hide": 0,
         "includeAll": false,
         "multi": false,
         "name": "Timestamp",
         "options": [],
-        "query": "SELECT CONCAT('[', DATE_FORMAT(log_timestamp, '%b %D %Y, %T'), ']', '(', UNIX_TIMESTAMP(log_timestamp), ')') FROM garbage.metrics;",
+        "query": "SELECT EXTRACT(EPOCH FROM log_timestamp)::bigint AS __value, TO_CHAR(log_timestamp, 'Mon DD YYYY, HH24:MI:SS') AS __text FROM metrics GROUP BY log_timestamp ORDER BY log_timestamp DESC;",
         "refresh": 1,
-        "regex": "/(?<text>(?<=\\[).*(?=\\]))|(?<value>(?<=\\().*(?=\\)))/g",
+        "regex": "",
         "skipUrlSync": false,
         "sort": 0,
         "type": "query"
@@ -1386,7 +1143,7 @@
   "timepicker": {},
   "timezone": "",
   "title": "Quick Look - Log Time",
-  "uid": "caTIP904z",
+  "uid": "quick-view-log-time",
   "version": 8,
   "weekStart": ""
 }
