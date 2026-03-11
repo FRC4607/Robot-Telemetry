@@ -43,10 +43,13 @@ if not (os.path.exists(groupPath) and os.path.isdir(groupPath)):
     )
     sys.exit(1)
 for group in os.listdir(args.groups):
+    full_path = os.path.join(args.groups, group)
+    if os.path.isdir(full_path):
+        continue
     split = group.split(".")
     if group != "__pycache__" and (len(split) == 1 or split[1] != "py"):
         print(
-            f"File/directory {group} in {args.groups} is not a .py file.",
+            f"File {group} in {args.groups} is not a .py file.",
             file=sys.stderr,
         )
         sys.exit(1)

@@ -1,0 +1,21 @@
+[Unit]
+Description=Robot Telemetry Service — Slap Shot (FRC 4607)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/root/Robot-Telemetry
+ExecStart=/root/Robot-Telemetry/bin/python3 /root/Robot-Telemetry/run.py
+Restart=on-failure
+RestartSec=10
+
+# Environment (override DB_URL if needed)
+# Environment=RUN_DB_URL=postgresql+psycopg2://user:pass@host:5432/dbname
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=robot-telemetry
+
+[Install]
+WantedBy=multi-user.target

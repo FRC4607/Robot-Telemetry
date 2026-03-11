@@ -1,6 +1,7 @@
 import sqlalchemy
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
 from db.engine import engine
+from typing import Optional
 import datetime
 
 
@@ -17,8 +18,8 @@ class Metric(Base):
     id: Mapped[int] = mapped_column(
         sqlalchemy.Integer, primary_key=True, autoincrement=True, nullable=False
     )
-    file_hash: Mapped[bytes] = mapped_column(sqlalchemy.BINARY(16), nullable=False)
-    metric_hash: Mapped[bytes] = mapped_column(sqlalchemy.BINARY(16), nullable=False)
+    file_hash: Mapped[bytes] = mapped_column(sqlalchemy.LargeBinary(16), nullable=False)
+    metric_hash: Mapped[bytes] = mapped_column(sqlalchemy.LargeBinary(16), nullable=False)
     file_name: Mapped[str] = mapped_column(sqlalchemy.Unicode(1024), nullable=False)
     group: Mapped[str] = mapped_column(sqlalchemy.Unicode(1024), nullable=False)
     metric: Mapped[str] = mapped_column(sqlalchemy.Unicode(1024), nullable=False)
@@ -27,11 +28,11 @@ class Metric(Base):
     metric_timestamp: Mapped[datetime.datetime] = mapped_column(
         sqlalchemy.DateTime, nullable=False, server_default=sqlalchemy.func.now()
     )
-    log_timestamp: Mapped[datetime.datetime] = mapped_column(
-        sqlalchemy.DateTime
+    log_timestamp: Mapped[Optional[datetime.datetime]] = mapped_column(
+        sqlalchemy.DateTime, nullable=True
     )
-    event_key: Mapped[str] = mapped_column(sqlalchemy.Unicode(256))
-    match_info: Mapped[str] = mapped_column(sqlalchemy.Unicode(16))
+    event_key: Mapped[Optional[str]] = mapped_column(sqlalchemy.Unicode(256), nullable=True)
+    match_info: Mapped[Optional[str]] = mapped_column(sqlalchemy.Unicode(16), nullable=True)
 
 
 Base.metadata.create_all(engine)
