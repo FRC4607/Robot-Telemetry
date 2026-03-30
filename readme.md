@@ -14,12 +14,26 @@ Sounds like a good deal? Awesome.
 
 ## Installation
 
-### Prerequisites
+### Quick Setup (Ubuntu VM)
+
+For a fresh Ubuntu 22.04/24.04 VM, an automated setup script is provided that installs everything (PostgreSQL, InfluxDB, Grafana, Python venv, and the systemd service) in one shot:
+
+```bash
+git clone -b 2026-wip https://github.com/FRC4607/Robot-Telemetry.git /root/Robot-Telemetry
+cd /root/Robot-Telemetry
+sudo ./setup-ubuntu.sh
+```
+
+See `setup-ubuntu.sh` for configurable variables (passwords, repo branch, etc.). After it finishes, follow the printed instructions to set up Grafana data sources and import dashboards.
+
+### Manual Installation
+
+#### Prerequisites
 
 1. Install a relational database of some kind. [MySQL](https://www.mysql.com/) was used in development, but any relational database supported by [SQLAlchemy](https://docs.sqlalchemy.org/en/20/dialects/index.html) and [Grafana](https://grafana.com/docs/grafana/latest/datasources/https://grafana.com/docs/grafana/latest/datasources/) should be OK (so you can technically  use [Google](https://github.com/betodealmeida/shillelagh/) [Sheets](https://grafana.com/grafana/plugins/grafana-googlesheets-datasource/) if you wanted).
 2. Install [Grafana](https://grafana.com/grafana/download). Whether you pick the Enterprise or OSS version shouldn't matter.
 
-### Python Setup
+#### Python Setup
 
 1. Clone this repository onto a computer, preferably one that can stay in your pit for the entire event.
 2. Create a new python venv in the folder:  
