@@ -133,8 +133,25 @@ def convert_hoot(hoot_path: str) -> Optional[str]:
     return out_path
 
 
+# Guard against concurrent processing of the same directory/file.
+_active_paths: set = set()
+_active_paths_lock = threading.Lock()
+
+
 def process_hoot_directory(hoot_dir: str, groups: List[GroupInfo]) -> int:
     """Convert all hoots in a directory, run metrics, and archive the originals."""
+    with _active_paths_lock:
+        if hoot_dir in _active_paths:
+            return 0
+        _active_paths.add(hoot_dir)
+    try:
+        return _process_hoot_directory(hoot_dir, groups)
+    finally:
+        with _active_paths_lock:
+            _active_paths.discard(hoot_dir)
+
+
+def _process_hoot_directory(hoot_dir: str, groups: List[GroupInfo]) -> int:
     dirname = os.path.basename(hoot_dir)
     hoot_files = sorted(glob.glob(os.path.join(hoot_dir, "*.hoot")))
     if not hoot_files:
@@ -390,25 +407,83 @@ class HootDirectoryHandler(FileSystemEventHandler):
             timer.start()
             self._timers[dir_path] = timer
 
+    def _schedule_wpilog(self, file_path: str):
+        """(Re-)schedule processing of a wpilog file after the settle period."""
+        with self._lock:
+            if file_path in self._timers:
+                self._timers[file_path].cancel()
+            timer = threading.Timer(SETTLE_SECONDS, self._process_wpilog, args=[file_path])
+            timer.daemon = True
+            timer.start()
+            self._timers[file_path] = timer
+
+    def _process_wpilog(self, file_path: str):
+        with self._lock:
+            self._timers.pop(file_path, None)
+
+        if not os.path.isfile(file_path):
+            return
+
+        fname = os.path.basename(file_path)
+        dest = os.path.join(LOGS_DIR, fname)
+        try:
+            if not os.path.exists(dest):
+                shutil.move(file_path, dest)
+                log.info("Moved %s → archive/logs/", fname)
+            else:
+                os.remove(file_path)
+            n = analyze_log(dest, self.groups)
+            if n:
+                log.info("  ✓ %s: %d metrics written", fname, n)
+        except Exception:
+            log.error("Error processing wpilog %s", fname, exc_info=True)
+
     def _process_directory(self, dir_path: str):
         with self._lock:
             self._timers.pop(dir_path, None)
 
         if not os.path.isdir(dir_path):
             return
-        if not glob.glob(os.path.join(dir_path, "*.hoot")):
+
+        # Find all directories containing .hoot files (may be nested)
+        hoot_dirs = []
+        for dirpath, _, filenames in os.walk(dir_path):
+            if any(f.endswith(".hoot") for f in filenames):
+                hoot_dirs.append(dirpath)
+
+        if not hoot_dirs:
             return
 
         try:
-            n = process_hoot_directory(dir_path, self.groups)
-            if n:
-                log.info("Directory %s complete: %d metrics written", os.path.basename(dir_path), n)
+            total = 0
+            for hd in sorted(hoot_dirs):
+                total += process_hoot_directory(hd, self.groups)
+            # Clean up empty parent directories
+            for root, dirs, files in os.walk(dir_path, topdown=False):
+                if root == dir_path:
+                    continue
+                try:
+                    os.rmdir(root)
+                except OSError:
+                    pass
+            try:
+                os.rmdir(dir_path)
+            except OSError:
+                pass
+            if total:
+                log.info("Directory %s complete: %d metrics written", os.path.basename(dir_path), total)
         except Exception:
             log.error("Error processing %s", dir_path, exc_info=True)
 
     def on_any_event(self, event: FileSystemEvent):
         src = event.src_path
         rel = os.path.relpath(src, INPUT_DIR)
+
+        # Handle wpilog files dropped directly in INPUT_DIR
+        if os.sep not in rel and src.endswith(".wpilog"):
+            self._schedule_wpilog(src)
+            return
+
         top_dir = rel.split(os.sep)[0]
         if top_dir == ".":
             return
@@ -420,17 +495,44 @@ class HootDirectoryHandler(FileSystemEventHandler):
 # ── Initial Scan ──────────────────────────────────────────────────────────────
 def initial_scan(groups: List[GroupInfo]):
     """Process any pending hoot directories and unanalyzed wpilog files."""
-    # Convert pending hoots
     if os.path.isdir(INPUT_DIR):
-        pending = sorted(
-            d for d in os.listdir(INPUT_DIR)
-            if os.path.isdir(os.path.join(INPUT_DIR, d))
-            and glob.glob(os.path.join(INPUT_DIR, d, "*.hoot"))
-        )
+        # Move wpilog files from input-logs/ to archive/logs/
+        wpilog_moved = 0
+        for fname in sorted(os.listdir(INPUT_DIR)):
+            if not fname.endswith(".wpilog"):
+                continue
+            src = os.path.join(INPUT_DIR, fname)
+            if not os.path.isfile(src):
+                continue
+            dest = os.path.join(LOGS_DIR, fname)
+            if not os.path.exists(dest):
+                shutil.move(src, dest)
+                log.info("  Moved %s → archive/logs/", fname)
+            else:
+                os.remove(src)
+            wpilog_moved += 1
+        if wpilog_moved:
+            log.info("Initial scan: moved %d wpilog files from input-logs/", wpilog_moved)
+
+        # Find hoot directories recursively (may be nested)
+        pending = []
+        for dirpath, _, filenames in os.walk(INPUT_DIR):
+            if any(f.endswith(".hoot") for f in filenames):
+                pending.append(dirpath)
+        pending.sort()
+
         if pending:
             log.info("Initial scan: %d hoot directories to process", len(pending))
-            for dirname in pending:
-                process_hoot_directory(os.path.join(INPUT_DIR, dirname), groups)
+            for hoot_dir in pending:
+                process_hoot_directory(hoot_dir, groups)
+            # Clean up empty parent directories left after hoot processing
+            for dirpath, dirnames, filenames in os.walk(INPUT_DIR, topdown=False):
+                if dirpath == INPUT_DIR:
+                    continue
+                try:
+                    os.rmdir(dirpath)
+                except OSError:
+                    pass
 
     # Analyze any unprocessed wpilog files
     logs = sorted(f for f in os.listdir(LOGS_DIR) if f.endswith(".wpilog"))
