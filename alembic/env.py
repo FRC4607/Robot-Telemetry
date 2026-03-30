@@ -1,13 +1,36 @@
+import os
+from pathlib import Path
 from logging.config import fileConfig
+from urllib.parse import quote_plus
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
 
+# ── Load .env for DB_PASSWORD ──────────────────────────────────────────────
+_env_path = Path(__file__).resolve().parent.parent / ".env"
+if _env_path.is_file():
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if not _line or _line.startswith("#"):
+                continue
+            _key, _, _val = _line.partition("=")
+            if _key and _ and _key not in os.environ:
+                os.environ[_key] = _val
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Override sqlalchemy.url from environment if DB_PASSWORD is available
+_db_password = os.environ.get("DB_PASSWORD", "")
+if _db_password:
+    config.set_main_option(
+        "sqlalchemy.url",
+        f"postgresql+psycopg2://postgres:{quote_plus(_db_password)}@127.0.0.1:5432/stoplight",
+    )
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
