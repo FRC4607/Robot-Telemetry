@@ -5,9 +5,9 @@ Wants=postgresql.service
 
 [Service]
 Type=simple
-WorkingDirectory=/root/Robot-Telemetry
-EnvironmentFile=/root/Robot-Telemetry/.env
-ExecStart=/root/Robot-Telemetry/bin/python3 /root/Robot-Telemetry/run.py
+WorkingDirectory=REPO_DIR_PLACEHOLDER
+EnvironmentFile=REPO_DIR_PLACEHOLDER/.env
+ExecStart=REPO_DIR_PLACEHOLDER/bin/python3 REPO_DIR_PLACEHOLDER/run.py
 Restart=on-failure
 RestartSec=10
 

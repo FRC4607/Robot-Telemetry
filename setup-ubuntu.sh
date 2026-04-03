@@ -278,7 +278,7 @@ info "Database schema is up to date."
 # 10. systemd service
 # ============================================================================
 info "Installing systemd service..."
-cp "${REPO_DIR}/robot-telemetry.service" /etc/systemd/system/robot-telemetry.service
+sed "s|REPO_DIR_PLACEHOLDER|${REPO_DIR}|g" "${REPO_DIR}/robot-telemetry.service" > /etc/systemd/system/robot-telemetry.service
 systemctl daemon-reload
 systemctl enable robot-telemetry.service
 systemctl restart robot-telemetry.service
