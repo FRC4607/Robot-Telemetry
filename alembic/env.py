@@ -27,10 +27,9 @@ config = context.config
 # Override sqlalchemy.url from environment if DB_PASSWORD is available
 _db_password = os.environ.get("DB_PASSWORD", "")
 if _db_password:
-    config.set_main_option(
-        "sqlalchemy.url",
-        f"postgresql+psycopg2://postgres:{quote_plus(_db_password)}@127.0.0.1:5432/stoplight",
-    )
+    _url = f"postgresql+psycopg2://postgres:{quote_plus(_db_password)}@127.0.0.1:5432/stoplight"
+    # Escape '%' as '%%' so configparser doesn't treat it as interpolation
+    config.set_main_option("sqlalchemy.url", _url.replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
