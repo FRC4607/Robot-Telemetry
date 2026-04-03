@@ -29,7 +29,7 @@
 set -euo pipefail
 
 # ── Configurable variables ─────────────────────────────────────────────────
-REPO_DIR="/root/Robot-Telemetry"
+REPO_DIR="/home/cis/robot-telemetry"
 REPO_URL="https://github.com/FRC4607/Robot-Telemetry.git"
 REPO_BRANCH="2026-wip"
 
