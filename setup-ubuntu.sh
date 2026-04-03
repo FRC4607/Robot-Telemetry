@@ -43,8 +43,12 @@ INFLUX_ADMIN_USER="admin"
 # ── Load secrets from .env if it exists ────────────────────────────────────
 # Passwords are read from .env so they aren't hardcoded in this script.
 # If .env doesn't exist yet, the script will create it later and prompt
-# for any missing values.
-if [[ -f "${REPO_DIR}/.env" ]]; then
+# for any missing values.  Check cwd first (re-runs), then REPO_DIR.
+if [[ -f ".env" ]]; then
+    set -a
+    source ".env"
+    set +a
+elif [[ -f "${REPO_DIR}/.env" ]]; then
     set -a
     source "${REPO_DIR}/.env"
     set +a
@@ -136,10 +140,16 @@ info "PostgreSQL is ready."
 # ============================================================================
 info "Installing InfluxDB 2.x..."
 if ! command -v influx &>/dev/null; then
-    curl -fsSL https://repos.influxdata.com/influxdata-archive_compat.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/influxdata.gpg
-    echo "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata.gpg] https://repos.influxdata.com/debian stable main" > /etc/apt/sources.list.d/influxdata.list
-    apt-get update -qq
-    apt-get install -y -qq influxdb2 influxdb2-cli
+    # Ubuntu and Debian
+    # Add the InfluxData GPG key and repository
+    mkdir -p /etc/apt/keyrings
+    curl --silent --location https://repos.influxdata.com/influxdata-archive.key \
+        | gpg --dearmor \
+        | tee /etc/apt/keyrings/influxdata-archive.gpg > /dev/null
+    echo 'deb [signed-by=/etc/apt/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/debian stable main' \
+        | tee /etc/apt/sources.list.d/influxdata.list > /dev/null
+    # Install influxdb
+    apt-get update -qq && apt-get install -y -qq influxdb2 influxdb2-cli
 else
     info "InfluxDB already installed, skipping."
 fi
