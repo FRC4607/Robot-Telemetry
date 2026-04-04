@@ -27,22 +27,24 @@ DASHBOARD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashbo
 # ── Subsystem → (device_type, device_ids, label, signals) ──────────────────
 # Built from config/device_map.py knowledge
 SWERVE_MODULES = {
-    "Front Left":  {"drive": 1,  "steer": 3,  "cancoder": 3},
-    "Front Right": {"drive": 40, "steer": 28, "cancoder": 2},
-    "Back Left":   {"drive": 18, "steer": 16, "cancoder": 16},
-    "Back Right":  {"drive": 19, "steer": 17, "cancoder": 17},
+    "Front Left":  {"drive": 23, "steer": 22, "cancoder": 22},
+    "Front Right": {"drive": 0,  "steer": 1,  "cancoder": 1},
+    "Back Left":   {"drive": 2,  "steer": 3,  "cancoder": 3},
+    "Back Right":  {"drive": 21, "steer": 20, "cancoder": 20},
 }
 
 SUBSYSTEMS = {
-    "Intake Arm":     {"type": "TalonFX", "ids": [48], "cancoder": [24]},
-    "Intake Wheels":  {"type": "TalonFX", "ids": [45]},
-    "Indexer":        {"type": "TalonFX", "ids": [26]},
-    "Chamber":        {"type": "TalonFX", "ids": [55]},
-    "Turret":         {"type": "TalonFX", "ids": [32], "cancoder": [50, 51]},
-    "Hood":           {"type": "TalonFX", "ids": [52]},
-    "Flywheel":       {"type": "TalonFX", "ids": [50, 51]},
-    "Climber Outer":  {"type": "TalonFX", "ids": [23, 6]},
-    "Climber Inner":  {"type": "TalonFX", "ids": [15, 56]},
+    "Intake Arm":      {"type": "TalonFX", "ids": [15], "cancoder": [15]},
+    "Intake Wheels":   {"type": "TalonFX", "ids": [14]},
+    "Indexer":         {"type": "TalonFX", "ids": [13]},
+    "Left Chamber":    {"type": "TalonFX", "ids": [6]},
+    "Right Chamber":   {"type": "TalonFX", "ids": [17]},
+    "Left Turret":     {"type": "TalonFX", "ids": [7],  "cancoder": [31, 32]},
+    "Right Turret":    {"type": "TalonFX", "ids": [16], "cancoder": [41, 42]},
+    "Left Hood":       {"type": "TalonFX", "ids": [8]},
+    "Right Hood":      {"type": "TalonFX", "ids": [9]},
+    "Left Flywheel":   {"type": "TalonFX", "ids": [4, 5]},
+    "Right Flywheel":  {"type": "TalonFX", "ids": [19, 18]},
 }
 
 MOTOR_SIGNALS = ["StatorCurrent", "SupplyCurrent", "SupplyVoltage", "MotorVoltage", "Velocity", "Position"]
@@ -420,7 +422,7 @@ ORDER BY stoplight DESC, "group", metric;''',
 
     # Per-group tables in collapsible rows
     groups = [
-        "swerve", "flywheel", "turret", "hood", "climber",
+        "swerve", "flywheel", "turret", "hood",
         "intake_arm", "intake_wheels", "indexer", "chamber", "power", "imu",
     ]
     y = 18
@@ -619,57 +621,110 @@ schema.tagValues(bucket: "{INFLUX_BUCKET}", tag: "file", predicate: (r) => r._me
     panels.append(make_row_panel("Swerve Drive", y, collapsed=True, panels=swerve_panels))
     y += 1
 
-    # ── Flywheel ───────────────────────────────────────────────────────────
-    fw_panels = []
-    fy = y + 1
-    fw_panels.append(make_timeseries_panel(
-        "Flywheel Currents (Leader vs Follower)",
-        flux_multi_device("TalonFX", [50, 51], "StatorCurrent"),
-        {"h": 8, "w": 12, "x": 0, "y": fy}, unit="amp",
+    # ── Left Flywheel ──────────────────────────────────────────────────────
+    lfw_panels = []
+    lfy = y + 1
+    lfw_panels.append(make_timeseries_panel(
+        "Left Flywheel Currents (Leader + Follower)",
+        flux_multi_device("TalonFX", [4, 5], "StatorCurrent"),
+        {"h": 8, "w": 12, "x": 0, "y": lfy}, unit="amp",
     ))
-    fw_panels.append(make_timeseries_panel(
-        "Flywheel Velocities",
-        flux_multi_device("TalonFX", [50, 51], "Velocity"),
-        {"h": 8, "w": 12, "x": 12, "y": fy}, unit="rot/s",
+    lfw_panels.append(make_timeseries_panel(
+        "Left Flywheel Velocities",
+        flux_multi_device("TalonFX", [4, 5], "Velocity"),
+        {"h": 8, "w": 12, "x": 12, "y": lfy}, unit="rot/s",
     ))
-    panels.append(make_row_panel("Flywheel", y, collapsed=True, panels=fw_panels))
+    panels.append(make_row_panel("Left Flywheel", y, collapsed=True, panels=lfw_panels))
     y += 1
 
-    # ── Turret ─────────────────────────────────────────────────────────────
-    turret_panels = []
-    ty = y + 1
-    turret_panels.append(make_timeseries_panel(
-        "Turret Motor Current",
-        flux_timeseries("TalonFX", 32, "StatorCurrent"),
-        {"h": 8, "w": 8, "x": 0, "y": ty}, unit="amp",
+    # ── Right Flywheel ─────────────────────────────────────────────────────
+    rfw_panels = []
+    rfy = y + 1
+    rfw_panels.append(make_timeseries_panel(
+        "Right Flywheel Currents (Leader + Follower)",
+        flux_multi_device("TalonFX", [19, 18], "StatorCurrent"),
+        {"h": 8, "w": 12, "x": 0, "y": rfy}, unit="amp",
     ))
-    turret_panels.append(make_timeseries_panel(
-        "Turret Motor Position",
-        flux_timeseries("TalonFX", 32, "Position"),
-        {"h": 8, "w": 8, "x": 8, "y": ty},
+    rfw_panels.append(make_timeseries_panel(
+        "Right Flywheel Velocities",
+        flux_multi_device("TalonFX", [19, 18], "Velocity"),
+        {"h": 8, "w": 12, "x": 12, "y": rfy}, unit="rot/s",
     ))
-    turret_panels.append(make_timeseries_panel(
-        "Turret Encoder Positions",
-        flux_multi_device("CANcoder", [50, 51], "Position"),
-        {"h": 8, "w": 8, "x": 16, "y": ty},
-    ))
-    panels.append(make_row_panel("Turret", y, collapsed=True, panels=turret_panels))
+    panels.append(make_row_panel("Right Flywheel", y, collapsed=True, panels=rfw_panels))
     y += 1
 
-    # ── Hood ───────────────────────────────────────────────────────────────
-    hood_panels = []
-    hy = y + 1
-    hood_panels.append(make_timeseries_panel(
-        "Hood Current",
-        flux_timeseries("TalonFX", 52, "StatorCurrent"),
-        {"h": 8, "w": 12, "x": 0, "y": hy}, unit="amp",
+    # ── Left Turret ────────────────────────────────────────────────────────
+    lt_panels = []
+    lty = y + 1
+    lt_panels.append(make_timeseries_panel(
+        "Left Turret Motor Current",
+        flux_timeseries("TalonFX", 7, "StatorCurrent"),
+        {"h": 8, "w": 8, "x": 0, "y": lty}, unit="amp",
     ))
-    hood_panels.append(make_timeseries_panel(
-        "Hood Position",
-        flux_timeseries("TalonFX", 52, "Position"),
-        {"h": 8, "w": 12, "x": 12, "y": hy},
+    lt_panels.append(make_timeseries_panel(
+        "Left Turret Motor Position",
+        flux_timeseries("TalonFX", 7, "Position"),
+        {"h": 8, "w": 8, "x": 8, "y": lty},
     ))
-    panels.append(make_row_panel("Hood", y, collapsed=True, panels=hood_panels))
+    lt_panels.append(make_timeseries_panel(
+        "Left Turret Encoder Positions",
+        flux_multi_device("CANcoder", [31, 32], "Position"),
+        {"h": 8, "w": 8, "x": 16, "y": lty},
+    ))
+    panels.append(make_row_panel("Left Turret", y, collapsed=True, panels=lt_panels))
+    y += 1
+
+    # ── Right Turret ───────────────────────────────────────────────────────
+    rt_panels = []
+    rty = y + 1
+    rt_panels.append(make_timeseries_panel(
+        "Right Turret Motor Current",
+        flux_timeseries("TalonFX", 16, "StatorCurrent"),
+        {"h": 8, "w": 8, "x": 0, "y": rty}, unit="amp",
+    ))
+    rt_panels.append(make_timeseries_panel(
+        "Right Turret Motor Position",
+        flux_timeseries("TalonFX", 16, "Position"),
+        {"h": 8, "w": 8, "x": 8, "y": rty},
+    ))
+    rt_panels.append(make_timeseries_panel(
+        "Right Turret Encoder Positions",
+        flux_multi_device("CANcoder", [41, 42], "Position"),
+        {"h": 8, "w": 8, "x": 16, "y": rty},
+    ))
+    panels.append(make_row_panel("Right Turret", y, collapsed=True, panels=rt_panels))
+    y += 1
+
+    # ── Left Hood ──────────────────────────────────────────────────────────
+    lh_panels = []
+    lhy = y + 1
+    lh_panels.append(make_timeseries_panel(
+        "Left Hood Current",
+        flux_timeseries("TalonFX", 8, "StatorCurrent"),
+        {"h": 8, "w": 12, "x": 0, "y": lhy}, unit="amp",
+    ))
+    lh_panels.append(make_timeseries_panel(
+        "Left Hood Position",
+        flux_timeseries("TalonFX", 8, "Position"),
+        {"h": 8, "w": 12, "x": 12, "y": lhy},
+    ))
+    panels.append(make_row_panel("Left Hood", y, collapsed=True, panels=lh_panels))
+    y += 1
+
+    # ── Right Hood ─────────────────────────────────────────────────────────
+    rh_panels = []
+    rhy = y + 1
+    rh_panels.append(make_timeseries_panel(
+        "Right Hood Current",
+        flux_timeseries("TalonFX", 9, "StatorCurrent"),
+        {"h": 8, "w": 12, "x": 0, "y": rhy}, unit="amp",
+    ))
+    rh_panels.append(make_timeseries_panel(
+        "Right Hood Position",
+        flux_timeseries("TalonFX", 9, "Position"),
+        {"h": 8, "w": 12, "x": 12, "y": rhy},
+    ))
+    panels.append(make_row_panel("Right Hood", y, collapsed=True, panels=rh_panels))
     y += 1
 
     # ── Intake ─────────────────────────────────────────────────────────────
@@ -677,17 +732,17 @@ schema.tagValues(bucket: "{INFLUX_BUCKET}", tag: "file", predicate: (r) => r._me
     iy = y + 1
     intake_panels.append(make_timeseries_panel(
         "Intake Arm Current",
-        flux_timeseries("TalonFX", 48, "StatorCurrent"),
+        flux_timeseries("TalonFX", 15, "StatorCurrent"),
         {"h": 8, "w": 8, "x": 0, "y": iy}, unit="amp",
     ))
     intake_panels.append(make_timeseries_panel(
         "Intake Arm Position (CANcoder)",
-        flux_timeseries("CANcoder", 24, "Position"),
+        flux_timeseries("CANcoder", 15, "Position"),
         {"h": 8, "w": 8, "x": 8, "y": iy},
     ))
     intake_panels.append(make_timeseries_panel(
         "Intake Wheels Current",
-        flux_timeseries("TalonFX", 45, "StatorCurrent"),
+        flux_timeseries("TalonFX", 14, "StatorCurrent"),
         {"h": 8, "w": 8, "x": 16, "y": iy}, unit="amp",
     ))
     panels.append(make_row_panel("Intake", y, collapsed=True, panels=intake_panels))
@@ -698,36 +753,25 @@ schema.tagValues(bucket: "{INFLUX_BUCKET}", tag: "file", predicate: (r) => r._me
     icy = y + 1
     ic_panels.append(make_timeseries_panel(
         "Indexer Current",
-        flux_timeseries("TalonFX", 26, "StatorCurrent"),
-        {"h": 8, "w": 8, "x": 0, "y": icy}, unit="amp",
+        flux_timeseries("TalonFX", 13, "StatorCurrent"),
+        {"h": 8, "w": 6, "x": 0, "y": icy}, unit="amp",
     ))
     ic_panels.append(make_timeseries_panel(
-        "Chamber Current",
-        flux_timeseries("TalonFX", 55, "StatorCurrent"),
-        {"h": 8, "w": 8, "x": 8, "y": icy}, unit="amp",
+        "Left Chamber Current",
+        flux_timeseries("TalonFX", 6, "StatorCurrent"),
+        {"h": 8, "w": 6, "x": 6, "y": icy}, unit="amp",
+    ))
+    ic_panels.append(make_timeseries_panel(
+        "Right Chamber Current",
+        flux_timeseries("TalonFX", 17, "StatorCurrent"),
+        {"h": 8, "w": 6, "x": 12, "y": icy}, unit="amp",
     ))
     ic_panels.append(make_timeseries_panel(
         "Indexer + Chamber Velocity",
-        flux_multi_device("TalonFX", [26, 55], "Velocity"),
-        {"h": 8, "w": 8, "x": 16, "y": icy}, unit="rot/s",
+        flux_multi_device("TalonFX", [13, 6, 17], "Velocity"),
+        {"h": 8, "w": 6, "x": 18, "y": icy}, unit="rot/s",
     ))
     panels.append(make_row_panel("Indexer + Chamber", y, collapsed=True, panels=ic_panels))
-    y += 1
-
-    # ── Climber ────────────────────────────────────────────────────────────
-    cl_panels = []
-    cy = y + 1
-    cl_panels.append(make_timeseries_panel(
-        "Climber Outer Currents",
-        flux_multi_device("TalonFX", [23, 6], "StatorCurrent"),
-        {"h": 8, "w": 12, "x": 0, "y": cy}, unit="amp",
-    ))
-    cl_panels.append(make_timeseries_panel(
-        "Climber Inner Currents",
-        flux_multi_device("TalonFX", [15, 56], "StatorCurrent"),
-        {"h": 8, "w": 12, "x": 12, "y": cy}, unit="amp",
-    ))
-    panels.append(make_row_panel("Climber", y, collapsed=True, panels=cl_panels))
     y += 1
 
     # ── Power ──────────────────────────────────────────────────────────────
@@ -735,15 +779,15 @@ schema.tagValues(bucket: "{INFLUX_BUCKET}", tag: "file", predicate: (r) => r._me
     for mod in SWERVE_MODULES.values():
         all_talon_ids.add(mod["drive"])
         all_talon_ids.add(mod["steer"])
-    for tid in [48, 45, 26, 55, 32, 52, 50, 51, 23, 6, 15, 56]:
+    for tid in [15, 14, 13, 6, 17, 7, 16, 8, 9, 4, 5, 19, 18]:
         all_talon_ids.add(tid)
 
     pwr_panels = []
     py_ = y + 1
-    # Use first swerve drive for bus voltage (representative)
+    # Use FL drive for bus voltage (representative)
     pwr_panels.append(make_timeseries_panel(
         "Bus Voltage (FL Drive)",
-        flux_timeseries("TalonFX", 1, "SupplyVoltage"),
+        flux_timeseries("TalonFX", 23, "SupplyVoltage"),
         {"h": 8, "w": 12, "x": 0, "y": py_}, unit="volt",
     ))
     pwr_panels.append(make_timeseries_panel(

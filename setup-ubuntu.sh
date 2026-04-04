@@ -10,13 +10,14 @@
 #   1. System packages (Python 3.12, build tools, PostgreSQL client libs)
 #   2. PostgreSQL 16 server
 #   3. InfluxDB 2.x
-#   4. Grafana OSS
+#   4. Grafana OSS (with plugins)
 #   5. Python venv & pip dependencies
-#   6. Database creation & Alembic migrations
-#   7. InfluxDB org/bucket setup
-#   8. .env secrets file
-#   9. systemd service installation
-#  10. Grafana dashboard import
+#   6. .env secrets file
+#   7. owlet binary setup
+#   8. Directory structure
+#   9. Database creation & Alembic migrations
+#  10. systemd service installation
+#  11. Grafana datasources & dashboard upload
 #
 # Usage:
 #   chmod +x setup-ubuntu.sh
@@ -205,8 +206,22 @@ fi
 
 systemctl enable --now grafana-server
 
-# Install the traffic-light plugin
+# Install required plugins
+info "Installing Grafana plugins..."
 grafana-cli plugins install snuids-trafficlights-panel 2>/dev/null || true
+grafana-cli plugins install heywesty-trafficlight-panel 2>/dev/null || true
+grafana-cli plugins install grafana-clock-panel 2>/dev/null || true
+
+# Allow unsigned plugins (heywesty-trafficlight-panel is unsigned)
+GRAFANA_INI="/etc/grafana/grafana.ini"
+if ! grep -q "heywesty-trafficlight-panel" "$GRAFANA_INI" 2>/dev/null; then
+    sed -i 's/^;allow_loading_unsigned_plugins =.*/allow_loading_unsigned_plugins = heywesty-trafficlight-panel/' "$GRAFANA_INI" 2>/dev/null || true
+    # If the line didn't exist uncommented, append to [plugins] section
+    if ! grep -q "^allow_loading_unsigned_plugins" "$GRAFANA_INI" 2>/dev/null; then
+        sed -i '/^\[plugins\]/a allow_loading_unsigned_plugins = heywesty-trafficlight-panel' "$GRAFANA_INI" 2>/dev/null || true
+    fi
+fi
+
 systemctl restart grafana-server
 
 info "Grafana is ready at http://localhost:3000 (default login: admin / admin)."
@@ -286,7 +301,72 @@ systemctl restart robot-telemetry.service
 info "robot-telemetry.service is active."
 
 # ============================================================================
-# 11. Summary
+# 11. Grafana datasources & dashboards
+# ============================================================================
+info "Configuring Grafana datasources..."
+
+# Wait for Grafana API to be ready
+for i in {1..15}; do
+    curl -sf -u admin:admin http://localhost:3000/api/health &>/dev/null && break
+    sleep 2
+done
+
+GRAFANA_API="http://localhost:3000/api"
+GRAFANA_AUTH="admin:admin"
+
+# The datasource UIDs must match what generate_dashboards.py expects
+PG_DS_UID="ffd8jczdyabr4c"
+INFLUX_DS_UID="fffnbhv0kdukgc"
+
+# Create PostgreSQL datasource (skip if already exists)
+if ! curl -sf -u "${GRAFANA_AUTH}" "${GRAFANA_API}/datasources/uid/${PG_DS_UID}" &>/dev/null; then
+    curl -sf -u "${GRAFANA_AUTH}" -X POST "${GRAFANA_API}/datasources" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"name\": \"PostgreSQL\",
+            \"type\": \"grafana-postgresql-datasource\",
+            \"uid\": \"${PG_DS_UID}\",
+            \"url\": \"127.0.0.1:5432\",
+            \"database\": \"${PG_DB}\",
+            \"user\": \"${PG_USER}\",
+            \"secureJsonData\": {\"password\": \"${PG_PASS}\"},
+            \"jsonData\": {\"sslmode\": \"disable\", \"postgresVersion\": 1600},
+            \"access\": \"proxy\",
+            \"isDefault\": false
+        }" >/dev/null && info "PostgreSQL datasource created." || warn "Failed to create PostgreSQL datasource."
+else
+    info "PostgreSQL datasource already exists, skipping."
+fi
+
+# Create InfluxDB datasource (skip if already exists)
+if ! curl -sf -u "${GRAFANA_AUTH}" "${GRAFANA_API}/datasources/uid/${INFLUX_DS_UID}" &>/dev/null; then
+    curl -sf -u "${GRAFANA_AUTH}" -X POST "${GRAFANA_API}/datasources" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"name\": \"InfluxDB\",
+            \"type\": \"influxdb\",
+            \"uid\": \"${INFLUX_DS_UID}\",
+            \"url\": \"http://127.0.0.1:8086\",
+            \"access\": \"proxy\",
+            \"jsonData\": {
+                \"version\": \"Flux\",
+                \"organization\": \"${INFLUX_ORG}\",
+                \"defaultBucket\": \"${INFLUX_BUCKET}\"
+            },
+            \"secureJsonData\": {\"token\": \"${INFLUX_TOKEN}\"},
+            \"isDefault\": false
+        }" >/dev/null && info "InfluxDB datasource created." || warn "Failed to create InfluxDB datasource."
+else
+    info "InfluxDB datasource already exists, skipping."
+fi
+
+# Generate and upload dashboards
+info "Generating and uploading Grafana dashboards..."
+"${REPO_DIR}/bin/python3" "${REPO_DIR}/generate_dashboards.py" --upload \
+    --grafana-url http://localhost:3000 --grafana-user admin --grafana-pass admin
+
+# ============================================================================
+# 12. Summary
 # ============================================================================
 echo ""
 echo "============================================================================"
@@ -298,15 +378,14 @@ echo " InfluxDB:      http://localhost:8086  org=${INFLUX_ORG}  bucket=${INFLUX_
 echo " Grafana:       http://localhost:3000  (login: admin / admin)"
 echo " Service:       systemctl status robot-telemetry"
 echo ""
+echo " Grafana datasources and dashboards have been configured automatically."
+echo " Dashboards available at:"
+echo "   - Match Stoplight:    http://localhost:3000/d/match-stoplight"
+echo "   - Signal Explorer:    http://localhost:3000/d/signal-explorer"
+echo "   - Subsystem Overview: http://localhost:3000/d/subsystem-overview"
+echo ""
 echo " Drop .hoot log directories into ${REPO_DIR}/input-logs/"
 echo " and the service will process them automatically."
-echo ""
-echo " Next steps:"
-echo "   1. Log into Grafana and add two data sources:"
-echo "      - PostgreSQL → host=localhost:5432, db=${PG_DB}, user=${PG_USER}"
-echo "      - InfluxDB (Flux) → url=http://localhost:8086, org=${INFLUX_ORG}, token=<from .env>"
-echo "   2. Import dashboards from ${REPO_DIR}/dashboards/*.json"
-echo "   3. (Optional) Update datasource UIDs in generate_dashboards.py"
 echo ""
 echo " To check the service log:  journalctl -u robot-telemetry -f"
 echo "============================================================================"

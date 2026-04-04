@@ -24,7 +24,7 @@ cd /root/Robot-Telemetry
 sudo ./setup-ubuntu.sh
 ```
 
-See `setup-ubuntu.sh` for configurable variables (passwords, repo branch, etc.). After it finishes, follow the printed instructions to set up Grafana data sources and import dashboards.
+See `setup-ubuntu.sh` for configurable variables (passwords, repo branch, etc.). The script automatically configures Grafana datasources (PostgreSQL + InfluxDB) and uploads all dashboards.
 
 ### Manual Installation
 
@@ -47,14 +47,23 @@ See `setup-ubuntu.sh` for configurable variables (passwords, repo branch, etc.).
 
 ### Grafana Setup
 
-1. Install [this traffic light plugin](https://grafana.com/grafana/plugins/snuids-trafficlights-panel/?tab=installation).
+If you used `setup-ubuntu.sh`, Grafana datasources and dashboards are already configured. For manual setups:
+
+1. Install the required plugins:
+   - [snuids-trafficlights-panel](https://grafana.com/grafana/plugins/snuids-trafficlights-panel/?tab=installation)
+   - [heywesty-trafficlight-panel](https://grafana.com/grafana/plugins/heywesty-trafficlight-panel/)
+   - [grafana-clock-panel](https://grafana.com/grafana/plugins/grafana-clock-panel/)
 2. Log into Grafana.
-3. Hover over the gear in the bottom left hand corner of the UI and select `Data sources`.
-4. Click on `Add data source` and follow the prompts to add your database.
-5. Click on the dashboards button (the one with the four squares) on the left hand side of the UI.
-6. Click `New > Import`.
-7. Click on `Upload JSON file` and select one of the dashboards in the dashboards folder from the cloned repo.
-8. Use the same process to add the other dashboards.
+3. Add two data sources:
+   - **PostgreSQL** → host: `localhost:5432`, database: `stoplight`, user: `postgres`
+   - **InfluxDB** (Flux) → URL: `http://localhost:8086`, org: `frc4607`, bucket: `robot-telemetry`, token from `.env`
+4. Generate and upload dashboards:
+   ```bash
+   python generate_dashboards.py --upload
+   ```
+   This creates three dashboards: Match Stoplight, Signal Explorer, and Subsystem Overview.
+
+   If you need to update the datasource UIDs in `generate_dashboards.py` to match your Grafana instance, edit the `PG_DS` and `INFLUX_DS` constants at the top of the file.
 
 ## Usage
 
