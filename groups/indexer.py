@@ -1,6 +1,6 @@
 """
-Indexer metrics for Slap Shot (FRC 4607, 2026).
-TalonFX ID 26, VelocityTorqueCurrentFOC, kMaxAmperage=80.
+Indexer metrics for FRC 4607, 2026 (second robot).
+TalonFX ID 13, VelocityTorqueCurrentFOC, kMaxAmperage=80.
 """
 
 from typing import Callable, Dict, Tuple

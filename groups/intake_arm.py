@@ -1,7 +1,7 @@
 """
-Intake Arm metrics for Slap Shot (FRC 4607, 2026).
-TalonFX ID 48 + CANcoder ID 24, DynamicMotionMagicTorqueCurrentFOC.
-SensorToMech=2.25, RotorToSensor=23, kMaxAmperage=80.
+Intake Arm metrics for FRC 4607, 2026 (second robot).
+TalonFX ID 15 + CANcoder ID 15, DynamicMotionMagicTorqueCurrentFOC.
+SensorToMech=2, RotorToSensor=23, kMaxAmperage=80.
 Soft limits: forward=0.19, reverse=0.02 (mechanism rotations).
 """
 

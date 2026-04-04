@@ -34,7 +34,7 @@
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
             },
-            "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"${device_type}\")\n  |> filter(fn: (r) => (r.device_type + \"-\" + r.device_id) =~ /^(${device_id:regex})$/)\n  |> filter(fn: (r) => r.signal =~ /^(${signal:regex})$/)\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: (if r.device_type + \"-\" + r.device_id == \"TalonFX-1\" then \"FL Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-3\" then \"FL Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-3\" then \"FL Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-40\" then \"FR Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-28\" then \"FR Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-2\" then \"FR Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-18\" then \"BL Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-16\" then \"BL Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-16\" then \"BL Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-19\" then \"BR Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-17\" then \"BR Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-17\" then \"BR Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-48\" then \"Intake Arm\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-24\" then \"Intake Arm Enc\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-45\" then \"Intake Wheels\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-26\" then \"Indexer\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-55\" then \"Chamber\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-32\" then \"Turret\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-50\" then \"Turret Enc 1\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-51\" then \"Turret Enc 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-52\" then \"Hood\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-50\" then \"Flywheel 1\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-51\" then \"Flywheel 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-23\" then \"Climber Outer 1\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-6\" then \"Climber Outer 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-15\" then \"Climber Inner 1\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-56\" then \"Climber Inner 2\" else if r.device_type + \"-\" + r.device_id == \"Pigeon2-0\" then \"Pigeon2 IMU\" else r.device_type + \"-\" + r.device_id) + \" - \" + r.signal}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
+            "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"${device_type}\")\n  |> filter(fn: (r) => (r.device_type + \"-\" + r.device_id) =~ /^(${device_id:regex})$/)\n  |> filter(fn: (r) => r.signal =~ /^(${signal:regex})$/)\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: (if r.device_type + \"-\" + r.device_id == \"TalonFX-23\" then \"FL Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-22\" then \"FL Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-22\" then \"FL Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-0\" then \"FR Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-1\" then \"FR Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-1\" then \"FR Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-2\" then \"BL Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-3\" then \"BL Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-3\" then \"BL Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-21\" then \"BR Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-20\" then \"BR Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-20\" then \"BR Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-15\" then \"Intake Arm\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-15\" then \"Intake Arm Enc\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-14\" then \"Intake Wheels\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-13\" then \"Indexer\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-6\" then \"Left Chamber\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-17\" then \"Right Chamber\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-7\" then \"Left Turret\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-31\" then \"Left Turret Enc 1\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-32\" then \"Left Turret Enc 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-16\" then \"Right Turret\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-41\" then \"Right Turret Enc 1\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-42\" then \"Right Turret Enc 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-8\" then \"Left Hood\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-9\" then \"Right Hood\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-4\" then \"Left Flywheel 1\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-5\" then \"Left Flywheel 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-19\" then \"Right Flywheel 1\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-18\" then \"Right Flywheel 2\" else if r.device_type + \"-\" + r.device_id == \"Pigeon2-0\" then \"Pigeon2 IMU\" else r.device_type + \"-\" + r.device_id) + \" - \" + r.signal}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
             "refId": "A"
           }
         ],
@@ -128,7 +128,7 @@
           "name": "device_id",
           "label": "Device",
           "type": "custom",
-          "query": "BL Drive : TalonFX-18,BL Encoder : CANcoder-16,BL Steer : TalonFX-16,BR Drive : TalonFX-19,BR Encoder : CANcoder-17,BR Steer : TalonFX-17,Chamber : TalonFX-55,Climber Inner 1 : TalonFX-15,Climber Inner 2 : TalonFX-56,Climber Outer 1 : TalonFX-23,Climber Outer 2 : TalonFX-6,FL Drive : TalonFX-1,FL Encoder : CANcoder-3,FL Steer : TalonFX-3,FR Drive : TalonFX-40,FR Encoder : CANcoder-2,FR Steer : TalonFX-28,Flywheel 1 : TalonFX-50,Flywheel 2 : TalonFX-51,Hood : TalonFX-52,Indexer : TalonFX-26,Intake Arm : TalonFX-48,Intake Arm Enc : CANcoder-24,Intake Wheels : TalonFX-45,Pigeon2 IMU : Pigeon2-0,Turret : TalonFX-32,Turret Enc 1 : CANcoder-50,Turret Enc 2 : CANcoder-51",
+          "query": "BL Drive : TalonFX-2,BL Encoder : CANcoder-3,BL Steer : TalonFX-3,BR Drive : TalonFX-21,BR Encoder : CANcoder-20,BR Steer : TalonFX-20,FL Drive : TalonFX-23,FL Encoder : CANcoder-22,FL Steer : TalonFX-22,FR Drive : TalonFX-0,FR Encoder : CANcoder-1,FR Steer : TalonFX-1,Indexer : TalonFX-13,Intake Arm : TalonFX-15,Intake Arm Enc : CANcoder-15,Intake Wheels : TalonFX-14,Left Chamber : TalonFX-6,Left Flywheel 1 : TalonFX-4,Left Flywheel 2 : TalonFX-5,Left Hood : TalonFX-8,Left Turret : TalonFX-7,Left Turret Enc 1 : CANcoder-31,Left Turret Enc 2 : CANcoder-32,Pigeon2 IMU : Pigeon2-0,Right Chamber : TalonFX-17,Right Flywheel 1 : TalonFX-19,Right Flywheel 2 : TalonFX-18,Right Hood : TalonFX-9,Right Turret : TalonFX-16,Right Turret Enc 1 : CANcoder-41,Right Turret Enc 2 : CANcoder-42",
           "options": [
             {
               "text": "All",
@@ -137,122 +137,117 @@
             },
             {
               "text": "BL Drive",
-              "value": "TalonFX-18",
+              "value": "TalonFX-2",
               "selected": false
             },
             {
               "text": "BL Encoder",
-              "value": "CANcoder-16",
-              "selected": false
-            },
-            {
-              "text": "BL Steer",
-              "value": "TalonFX-16",
-              "selected": false
-            },
-            {
-              "text": "BR Drive",
-              "value": "TalonFX-19",
-              "selected": false
-            },
-            {
-              "text": "BR Encoder",
-              "value": "CANcoder-17",
-              "selected": false
-            },
-            {
-              "text": "BR Steer",
-              "value": "TalonFX-17",
-              "selected": false
-            },
-            {
-              "text": "Chamber",
-              "value": "TalonFX-55",
-              "selected": false
-            },
-            {
-              "text": "Climber Inner 1",
-              "value": "TalonFX-15",
-              "selected": false
-            },
-            {
-              "text": "Climber Inner 2",
-              "value": "TalonFX-56",
-              "selected": false
-            },
-            {
-              "text": "Climber Outer 1",
-              "value": "TalonFX-23",
-              "selected": false
-            },
-            {
-              "text": "Climber Outer 2",
-              "value": "TalonFX-6",
-              "selected": false
-            },
-            {
-              "text": "FL Drive",
-              "value": "TalonFX-1",
-              "selected": false
-            },
-            {
-              "text": "FL Encoder",
               "value": "CANcoder-3",
               "selected": false
             },
             {
-              "text": "FL Steer",
+              "text": "BL Steer",
               "value": "TalonFX-3",
               "selected": false
             },
             {
+              "text": "BR Drive",
+              "value": "TalonFX-21",
+              "selected": false
+            },
+            {
+              "text": "BR Encoder",
+              "value": "CANcoder-20",
+              "selected": false
+            },
+            {
+              "text": "BR Steer",
+              "value": "TalonFX-20",
+              "selected": false
+            },
+            {
+              "text": "FL Drive",
+              "value": "TalonFX-23",
+              "selected": false
+            },
+            {
+              "text": "FL Encoder",
+              "value": "CANcoder-22",
+              "selected": false
+            },
+            {
+              "text": "FL Steer",
+              "value": "TalonFX-22",
+              "selected": false
+            },
+            {
               "text": "FR Drive",
-              "value": "TalonFX-40",
+              "value": "TalonFX-0",
               "selected": false
             },
             {
               "text": "FR Encoder",
-              "value": "CANcoder-2",
+              "value": "CANcoder-1",
               "selected": false
             },
             {
               "text": "FR Steer",
-              "value": "TalonFX-28",
-              "selected": false
-            },
-            {
-              "text": "Flywheel 1",
-              "value": "TalonFX-50",
-              "selected": false
-            },
-            {
-              "text": "Flywheel 2",
-              "value": "TalonFX-51",
-              "selected": false
-            },
-            {
-              "text": "Hood",
-              "value": "TalonFX-52",
+              "value": "TalonFX-1",
               "selected": false
             },
             {
               "text": "Indexer",
-              "value": "TalonFX-26",
+              "value": "TalonFX-13",
               "selected": false
             },
             {
               "text": "Intake Arm",
-              "value": "TalonFX-48",
+              "value": "TalonFX-15",
               "selected": false
             },
             {
               "text": "Intake Arm Enc",
-              "value": "CANcoder-24",
+              "value": "CANcoder-15",
               "selected": false
             },
             {
               "text": "Intake Wheels",
-              "value": "TalonFX-45",
+              "value": "TalonFX-14",
+              "selected": false
+            },
+            {
+              "text": "Left Chamber",
+              "value": "TalonFX-6",
+              "selected": false
+            },
+            {
+              "text": "Left Flywheel 1",
+              "value": "TalonFX-4",
+              "selected": false
+            },
+            {
+              "text": "Left Flywheel 2",
+              "value": "TalonFX-5",
+              "selected": false
+            },
+            {
+              "text": "Left Hood",
+              "value": "TalonFX-8",
+              "selected": false
+            },
+            {
+              "text": "Left Turret",
+              "value": "TalonFX-7",
+              "selected": false
+            },
+            {
+              "text": "Left Turret Enc 1",
+              "value": "CANcoder-31",
+              "selected": false
+            },
+            {
+              "text": "Left Turret Enc 2",
+              "value": "CANcoder-32",
               "selected": false
             },
             {
@@ -261,18 +256,38 @@
               "selected": false
             },
             {
-              "text": "Turret",
-              "value": "TalonFX-32",
+              "text": "Right Chamber",
+              "value": "TalonFX-17",
               "selected": false
             },
             {
-              "text": "Turret Enc 1",
-              "value": "CANcoder-50",
+              "text": "Right Flywheel 1",
+              "value": "TalonFX-19",
               "selected": false
             },
             {
-              "text": "Turret Enc 2",
-              "value": "CANcoder-51",
+              "text": "Right Flywheel 2",
+              "value": "TalonFX-18",
+              "selected": false
+            },
+            {
+              "text": "Right Hood",
+              "value": "TalonFX-9",
+              "selected": false
+            },
+            {
+              "text": "Right Turret",
+              "value": "TalonFX-16",
+              "selected": false
+            },
+            {
+              "text": "Right Turret Enc 1",
+              "value": "CANcoder-41",
+              "selected": false
+            },
+            {
+              "text": "Right Turret Enc 2",
+              "value": "CANcoder-42",
               "selected": false
             }
           ],

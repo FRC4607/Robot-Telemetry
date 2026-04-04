@@ -1,8 +1,8 @@
 """
-Turret metrics for Slap Shot (FRC 4607, 2026).
-TalonFX ID 32 + CANcoder IDs 50 & 51, MotionMagicTorqueCurrentFOC.
-RotorToMechanism=10.2, kMaxAmperage=80.
-Uses Chinese Remainder Theorem with two encoders for absolute position.
+Turret metrics for FRC 4607, 2026 (second robot).
+Left Turret: TalonFX ID 7 + CANcoder IDs 31 & 32.
+Right Turret: TalonFX ID 16 + CANcoder IDs 41 & 42.
+MotionMagicTorqueCurrentFOC, RotorToMechanism=10.2, kMaxAmperage=80.
 """
 
 from typing import Callable, Dict, Tuple
@@ -12,15 +12,27 @@ import sys, os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from config.device_map import (
-    TURRET_MOTOR, TURRET_ENCODER1, TURRET_ENCODER2, TURRET_MAX_AMPERAGE,
+    LEFT_TURRET_MOTOR, LEFT_TURRET_ENCODER1, LEFT_TURRET_ENCODER2, LEFT_TURRET_MAX_AMPERAGE,
+    RIGHT_TURRET_MOTOR, RIGHT_TURRET_ENCODER1, RIGHT_TURRET_ENCODER2, RIGHT_TURRET_MAX_AMPERAGE,
     talon_key, cancoder_key,
 )
 
 pd.options.mode.chained_assignment = None
 
-MOTOR_ID = TURRET_MOTOR
-ENC1_ID = TURRET_ENCODER1
-ENC2_ID = TURRET_ENCODER2
+TURRETS = {
+    "Left": {
+        "motor": LEFT_TURRET_MOTOR,
+        "enc1": LEFT_TURRET_ENCODER1,
+        "enc2": LEFT_TURRET_ENCODER2,
+        "max_amp": LEFT_TURRET_MAX_AMPERAGE,
+    },
+    "Right": {
+        "motor": RIGHT_TURRET_MOTOR,
+        "enc1": RIGHT_TURRET_ENCODER1,
+        "enc2": RIGHT_TURRET_ENCODER2,
+        "max_amp": RIGHT_TURRET_MAX_AMPERAGE,
+    },
+}
 
 
 def _get_numeric(df: pd.DataFrame, key: str) -> pd.Series:
@@ -33,18 +45,35 @@ def _get_numeric(df: pd.DataFrame, key: str) -> pd.Series:
 
 
 def defineMetrics() -> Dict[str, Callable[[pd.DataFrame], Tuple[int, str]]]:
-    return {
-        "Turret Max Current": ProcessMaxCurrent,
-        "Turret Avg Current": ProcessAvgCurrent,
-        "Turret Max Velocity": ProcessMaxVelocity,
-        "Turret Position Range": ProcessPositionRange,
-        "Turret Encoder1 Alignment": ProcessEncoder1Alignment,
-        "Turret Encoder2 Alignment": ProcessEncoder2Alignment,
-    }
+    metrics = {}
+    for side, info in TURRETS.items():
+        motor_id = info["motor"]
+        enc1_id = info["enc1"]
+        enc2_id = info["enc2"]
+        max_amp = info["max_amp"]
+        metrics[f"{side} Turret Max Current"] = (
+            lambda df, d=motor_id, m=max_amp: _max_current(df, d, m)
+        )
+        metrics[f"{side} Turret Avg Current"] = (
+            lambda df, d=motor_id: _avg_current(df, d)
+        )
+        metrics[f"{side} Turret Max Velocity"] = (
+            lambda df, d=motor_id: _max_velocity(df, d)
+        )
+        metrics[f"{side} Turret Position Range"] = (
+            lambda df, d=motor_id: _position_range(df, d)
+        )
+        metrics[f"{side} Turret Encoder1 Alignment"] = (
+            lambda df, d=motor_id, e=enc1_id: _encoder_alignment(df, d, e)
+        )
+        metrics[f"{side} Turret Encoder2 Alignment"] = (
+            lambda df, d=motor_id, e=enc2_id: _encoder_alignment(df, d, e)
+        )
+    return metrics
 
 
-def ProcessMaxCurrent(df: pd.DataFrame) -> Tuple[int, str]:
-    key = talon_key(MOTOR_ID, "StatorCurrent")
+def _max_current(df: pd.DataFrame, device_id: int, max_amperage: float) -> Tuple[int, str]:
+    key = talon_key(device_id, "StatorCurrent")
     data = _get_numeric(df, key)
     if data.empty:
         return -1, "metric_not_implemented"
@@ -53,13 +82,13 @@ def ProcessMaxCurrent(df: pd.DataFrame) -> Tuple[int, str]:
         return -1, "insufficient_data"
     smoothed = np.convolve(data.to_numpy(), np.ones(window) / window, "valid")
     max_val = float(smoothed.max())
-    stoplight = 2 if max_val > TURRET_MAX_AMPERAGE else (1 if max_val > TURRET_MAX_AMPERAGE * 0.75 else 0)
+    stoplight = 2 if max_val > max_amperage else (1 if max_val > max_amperage * 0.75 else 0)
     return stoplight, f"{max_val:.1f} A"
 
 
-def ProcessAvgCurrent(df: pd.DataFrame) -> Tuple[int, str]:
-    curr_key = talon_key(MOTOR_ID, "StatorCurrent")
-    volt_key = talon_key(MOTOR_ID, "MotorVoltage")
+def _avg_current(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
+    curr_key = talon_key(device_id, "StatorCurrent")
+    volt_key = talon_key(device_id, "MotorVoltage")
     currents = _get_numeric(df, curr_key)
     voltages = _get_numeric(df, volt_key)
     if currents.empty:
@@ -78,8 +107,8 @@ def ProcessAvgCurrent(df: pd.DataFrame) -> Tuple[int, str]:
     return stoplight, f"{avg_val:.1f} A"
 
 
-def ProcessMaxVelocity(df: pd.DataFrame) -> Tuple[int, str]:
-    key = talon_key(MOTOR_ID, "Velocity")
+def _max_velocity(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
+    key = talon_key(device_id, "Velocity")
     data = _get_numeric(df, key)
     if data.empty:
         return -1, "metric_not_implemented"
@@ -87,9 +116,8 @@ def ProcessMaxVelocity(df: pd.DataFrame) -> Tuple[int, str]:
     return 0, f"{max_val:.1f} rot/s"
 
 
-def ProcessPositionRange(df: pd.DataFrame) -> Tuple[int, str]:
-    """Report turret motor position range (mechanism rotations)."""
-    key = talon_key(MOTOR_ID, "Position")
+def _position_range(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
+    key = talon_key(device_id, "Position")
     data = _get_numeric(df, key)
     if data.empty:
         return -1, "metric_not_implemented"
@@ -99,9 +127,8 @@ def ProcessPositionRange(df: pd.DataFrame) -> Tuple[int, str]:
     return 0, f"{range_deg:.1f} deg range ({min_pos:.3f} to {max_pos:.3f} rot)"
 
 
-def _encoder_alignment(df: pd.DataFrame, enc_id: int) -> Tuple[int, str]:
-    """Velocity correlation between turret motor and a CANcoder."""
-    talon_vel = _get_numeric(df, talon_key(MOTOR_ID, "Velocity"))
+def _encoder_alignment(df: pd.DataFrame, motor_id: int, enc_id: int) -> Tuple[int, str]:
+    talon_vel = _get_numeric(df, talon_key(motor_id, "Velocity"))
     cc_vel = _get_numeric(df, cancoder_key(enc_id, "Velocity"))
     if talon_vel.empty or cc_vel.empty:
         return -1, "metric_not_implemented"
@@ -118,11 +145,3 @@ def _encoder_alignment(df: pd.DataFrame, enc_id: int) -> Tuple[int, str]:
         return 0, "no meaningful motion"
     stoplight = 2 if abs(corr) < 0.5 else (1 if abs(corr) < 0.8 else 0)
     return stoplight, f"r={corr:.3f}"
-
-
-def ProcessEncoder1Alignment(df: pd.DataFrame) -> Tuple[int, str]:
-    return _encoder_alignment(df, ENC1_ID)
-
-
-def ProcessEncoder2Alignment(df: pd.DataFrame) -> Tuple[int, str]:
-    return _encoder_alignment(df, ENC2_ID)

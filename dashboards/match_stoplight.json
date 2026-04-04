@@ -704,7 +704,7 @@
       {
         "id": 16,
         "type": "row",
-        "title": "Climber",
+        "title": "Intake Arm",
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -716,102 +716,6 @@
           {
             "id": 15,
             "type": "table",
-            "title": "Climber Metrics",
-            "datasource": {
-              "type": "grafana-postgresql-datasource",
-              "uid": "ffd8jczdyabr4c"
-            },
-            "gridPos": {
-              "h": 8,
-              "w": 24,
-              "x": 0,
-              "y": 23
-            },
-            "targets": [
-              {
-                "datasource": {
-                  "type": "grafana-postgresql-datasource",
-                  "uid": "ffd8jczdyabr4c"
-                },
-                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'climber'\nORDER BY stoplight DESC, metric;",
-                "format": "table",
-                "rawQuery": true,
-                "refId": "A"
-              }
-            ],
-            "fieldConfig": {
-              "defaults": {
-                "color": {
-                  "mode": "thresholds"
-                },
-                "thresholds": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "green",
-                      "value": 0
-                    },
-                    {
-                      "color": "#EAB839",
-                      "value": 1
-                    },
-                    {
-                      "color": "red",
-                      "value": 2
-                    }
-                  ]
-                }
-              },
-              "overrides": [
-                {
-                  "matcher": {
-                    "id": "byName",
-                    "options": "stoplight"
-                  },
-                  "properties": [
-                    {
-                      "id": "custom.displayMode",
-                      "value": "color-background"
-                    },
-                    {
-                      "id": "custom.width",
-                      "value": 80
-                    }
-                  ]
-                }
-              ]
-            },
-            "options": {
-              "showHeader": true,
-              "sortBy": [
-                {
-                  "desc": true,
-                  "displayName": "stoplight"
-                }
-              ]
-            }
-          }
-        ]
-      },
-      {
-        "id": 18,
-        "type": "row",
-        "title": "Intake Arm",
-        "gridPos": {
-          "h": 1,
-          "w": 24,
-          "x": 0,
-          "y": 23
-        },
-        "collapsed": true,
-        "panels": [
-          {
-            "id": 17,
-            "type": "table",
             "title": "Intake Arm Metrics",
             "datasource": {
               "type": "grafana-postgresql-datasource",
@@ -821,7 +725,7 @@
               "h": 8,
               "w": 24,
               "x": 0,
-              "y": 24
+              "y": 23
             },
             "targets": [
               {
@@ -894,19 +798,19 @@
         ]
       },
       {
-        "id": 20,
+        "id": 18,
         "type": "row",
         "title": "Intake Wheels",
         "gridPos": {
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 24
+          "y": 23
         },
         "collapsed": true,
         "panels": [
           {
-            "id": 19,
+            "id": 17,
             "type": "table",
             "title": "Intake Wheels Metrics",
             "datasource": {
@@ -917,7 +821,7 @@
               "h": 8,
               "w": 24,
               "x": 0,
-              "y": 25
+              "y": 24
             },
             "targets": [
               {
@@ -990,19 +894,19 @@
         ]
       },
       {
-        "id": 22,
+        "id": 20,
         "type": "row",
         "title": "Indexer",
         "gridPos": {
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 25
+          "y": 24
         },
         "collapsed": true,
         "panels": [
           {
-            "id": 21,
+            "id": 19,
             "type": "table",
             "title": "Indexer Metrics",
             "datasource": {
@@ -1013,7 +917,7 @@
               "h": 8,
               "w": 24,
               "x": 0,
-              "y": 26
+              "y": 25
             },
             "targets": [
               {
@@ -1086,19 +990,19 @@
         ]
       },
       {
-        "id": 24,
+        "id": 22,
         "type": "row",
         "title": "Chamber",
         "gridPos": {
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 26
+          "y": 25
         },
         "collapsed": true,
         "panels": [
           {
-            "id": 23,
+            "id": 21,
             "type": "table",
             "title": "Chamber Metrics",
             "datasource": {
@@ -1109,7 +1013,7 @@
               "h": 8,
               "w": 24,
               "x": 0,
-              "y": 27
+              "y": 26
             },
             "targets": [
               {
@@ -1182,19 +1086,19 @@
         ]
       },
       {
-        "id": 26,
+        "id": 24,
         "type": "row",
         "title": "Power",
         "gridPos": {
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 27
+          "y": 26
         },
         "collapsed": true,
         "panels": [
           {
-            "id": 25,
+            "id": 23,
             "type": "table",
             "title": "Power Metrics",
             "datasource": {
@@ -1205,7 +1109,7 @@
               "h": 8,
               "w": 24,
               "x": 0,
-              "y": 28
+              "y": 27
             },
             "targets": [
               {
@@ -1278,19 +1182,19 @@
         ]
       },
       {
-        "id": 28,
+        "id": 26,
         "type": "row",
         "title": "Imu",
         "gridPos": {
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 28
+          "y": 27
         },
         "collapsed": true,
         "panels": [
           {
-            "id": 27,
+            "id": 25,
             "type": "table",
             "title": "Imu Metrics",
             "datasource": {
@@ -1301,7 +1205,7 @@
               "h": 8,
               "w": 24,
               "x": 0,
-              "y": 29
+              "y": 28
             },
             "targets": [
               {

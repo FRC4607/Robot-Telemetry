@@ -46,7 +46,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"1\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"23\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -93,7 +93,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"3\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"22\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -140,7 +140,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"1\")\n  |> filter(fn: (r) => r.signal == \"Velocity\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"23\")\n  |> filter(fn: (r) => r.signal == \"Velocity\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -187,7 +187,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"1\")\n  |> filter(fn: (r) => r.signal == \"SupplyVoltage\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"23\")\n  |> filter(fn: (r) => r.signal == \"SupplyVoltage\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -234,7 +234,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"40\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"0\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -281,7 +281,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"28\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"1\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -328,7 +328,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"40\")\n  |> filter(fn: (r) => r.signal == \"Velocity\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"0\")\n  |> filter(fn: (r) => r.signal == \"Velocity\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -375,7 +375,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"40\")\n  |> filter(fn: (r) => r.signal == \"SupplyVoltage\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"0\")\n  |> filter(fn: (r) => r.signal == \"SupplyVoltage\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -422,7 +422,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"18\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"2\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -469,7 +469,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"16\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"3\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -516,7 +516,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"18\")\n  |> filter(fn: (r) => r.signal == \"Velocity\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"2\")\n  |> filter(fn: (r) => r.signal == \"Velocity\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -563,7 +563,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"18\")\n  |> filter(fn: (r) => r.signal == \"SupplyVoltage\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"2\")\n  |> filter(fn: (r) => r.signal == \"SupplyVoltage\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -610,7 +610,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"19\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"21\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -657,7 +657,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"17\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"20\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -704,7 +704,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"19\")\n  |> filter(fn: (r) => r.signal == \"Velocity\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"21\")\n  |> filter(fn: (r) => r.signal == \"Velocity\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -751,7 +751,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"19\")\n  |> filter(fn: (r) => r.signal == \"SupplyVoltage\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"21\")\n  |> filter(fn: (r) => r.signal == \"SupplyVoltage\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -783,7 +783,7 @@
       {
         "id": 20,
         "type": "row",
-        "title": "Flywheel",
+        "title": "Left Flywheel",
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -795,7 +795,7 @@
           {
             "id": 18,
             "type": "timeseries",
-            "title": "Flywheel Currents (Leader vs Follower)",
+            "title": "Left Flywheel Currents (Leader + Follower)",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
@@ -812,7 +812,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"50\" or r.device_id == \"51\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"50\" then \"Flywheel 1\" else if r.device_id == \"51\" then \"Flywheel 2\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"4\" or r.device_id == \"5\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"4\" then \"Left Flywheel 1\" else if r.device_id == \"5\" then \"Left Flywheel 2\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
                 "refId": "A"
               }
             ],
@@ -842,7 +842,7 @@
           {
             "id": 19,
             "type": "timeseries",
-            "title": "Flywheel Velocities",
+            "title": "Left Flywheel Velocities",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
@@ -859,7 +859,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"50\" or r.device_id == \"51\")\n  |> filter(fn: (r) => r.signal == \"Velocity\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"50\" then \"Flywheel 1\" else if r.device_id == \"51\" then \"Flywheel 2\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"4\" or r.device_id == \"5\")\n  |> filter(fn: (r) => r.signal == \"Velocity\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"4\" then \"Left Flywheel 1\" else if r.device_id == \"5\" then \"Left Flywheel 2\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
                 "refId": "A"
               }
             ],
@@ -889,9 +889,9 @@
         ]
       },
       {
-        "id": 24,
+        "id": 23,
         "type": "row",
-        "title": "Turret",
+        "title": "Right Flywheel",
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -903,14 +903,14 @@
           {
             "id": 21,
             "type": "timeseries",
-            "title": "Turret Motor Current",
+            "title": "Right Flywheel Currents (Leader + Follower)",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
             },
             "gridPos": {
               "h": 8,
-              "w": 8,
+              "w": 12,
               "x": 0,
               "y": 3
             },
@@ -920,7 +920,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"32\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"19\" or r.device_id == \"18\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"19\" then \"Right Flywheel 1\" else if r.device_id == \"18\" then \"Right Flywheel 2\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
                 "refId": "A"
               }
             ],
@@ -950,15 +950,15 @@
           {
             "id": 22,
             "type": "timeseries",
-            "title": "Turret Motor Position",
+            "title": "Right Flywheel Velocities",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
             },
             "gridPos": {
               "h": 8,
-              "w": 8,
-              "x": 8,
+              "w": 12,
+              "x": 12,
               "y": 3
             },
             "targets": [
@@ -967,60 +967,13 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"32\")\n  |> filter(fn: (r) => r.signal == \"Position\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"19\" or r.device_id == \"18\")\n  |> filter(fn: (r) => r.signal == \"Velocity\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"19\" then \"Right Flywheel 1\" else if r.device_id == \"18\" then \"Right Flywheel 2\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
                 "refId": "A"
               }
             ],
             "fieldConfig": {
               "defaults": {
-                "unit": "",
-                "custom": {
-                  "lineWidth": 1,
-                  "fillOpacity": 10,
-                  "spanNulls": true,
-                  "axisBorderShow": false
-                }
-              },
-              "overrides": []
-            },
-            "options": {
-              "tooltip": {
-                "mode": "multi",
-                "sort": "desc"
-              },
-              "legend": {
-                "displayMode": "list",
-                "placement": "bottom"
-              }
-            }
-          },
-          {
-            "id": 23,
-            "type": "timeseries",
-            "title": "Turret Encoder Positions",
-            "datasource": {
-              "type": "influxdb",
-              "uid": "fffnbhv0kdukgc"
-            },
-            "gridPos": {
-              "h": 8,
-              "w": 8,
-              "x": 16,
-              "y": 3
-            },
-            "targets": [
-              {
-                "datasource": {
-                  "type": "influxdb",
-                  "uid": "fffnbhv0kdukgc"
-                },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"CANcoder\")\n  |> filter(fn: (r) => r.device_id == \"50\" or r.device_id == \"51\")\n  |> filter(fn: (r) => r.signal == \"Position\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"50\" then \"Turret Enc 1\" else if r.device_id == \"51\" then \"Turret Enc 2\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
-                "refId": "A"
-              }
-            ],
-            "fieldConfig": {
-              "defaults": {
-                "unit": "",
+                "unit": "rot/s",
                 "custom": {
                   "lineWidth": 1,
                   "fillOpacity": 10,
@@ -1046,7 +999,7 @@
       {
         "id": 27,
         "type": "row",
-        "title": "Hood",
+        "title": "Left Turret",
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -1056,16 +1009,16 @@
         "collapsed": true,
         "panels": [
           {
-            "id": 25,
+            "id": 24,
             "type": "timeseries",
-            "title": "Hood Current",
+            "title": "Left Turret Motor Current",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
             },
             "gridPos": {
               "h": 8,
-              "w": 12,
+              "w": 8,
               "x": 0,
               "y": 4
             },
@@ -1075,7 +1028,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"52\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"7\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -1103,17 +1056,17 @@
             }
           },
           {
-            "id": 26,
+            "id": 25,
             "type": "timeseries",
-            "title": "Hood Position",
+            "title": "Left Turret Motor Position",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
             },
             "gridPos": {
               "h": 8,
-              "w": 12,
-              "x": 12,
+              "w": 8,
+              "x": 8,
               "y": 4
             },
             "targets": [
@@ -1122,7 +1075,54 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"52\")\n  |> filter(fn: (r) => r.signal == \"Position\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"7\")\n  |> filter(fn: (r) => r.signal == \"Position\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "",
+                "custom": {
+                  "lineWidth": 1,
+                  "fillOpacity": 10,
+                  "spanNulls": true,
+                  "axisBorderShow": false
+                }
+              },
+              "overrides": []
+            },
+            "options": {
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              },
+              "legend": {
+                "displayMode": "list",
+                "placement": "bottom"
+              }
+            }
+          },
+          {
+            "id": 26,
+            "type": "timeseries",
+            "title": "Left Turret Encoder Positions",
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fffnbhv0kdukgc"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 8,
+              "x": 16,
+              "y": 4
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "influxdb",
+                  "uid": "fffnbhv0kdukgc"
+                },
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"CANcoder\")\n  |> filter(fn: (r) => r.device_id == \"31\" or r.device_id == \"32\")\n  |> filter(fn: (r) => r.signal == \"Position\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"31\" then \"Left Turret Enc 1\" else if r.device_id == \"32\" then \"Left Turret Enc 2\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
                 "refId": "A"
               }
             ],
@@ -1154,7 +1154,7 @@
       {
         "id": 31,
         "type": "row",
-        "title": "Intake",
+        "title": "Right Turret",
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -1166,7 +1166,7 @@
           {
             "id": 28,
             "type": "timeseries",
-            "title": "Intake Arm Current",
+            "title": "Right Turret Motor Current",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
@@ -1183,7 +1183,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"48\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"16\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -1213,7 +1213,7 @@
           {
             "id": 29,
             "type": "timeseries",
-            "title": "Intake Arm Position (CANcoder)",
+            "title": "Right Turret Motor Position",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
@@ -1230,7 +1230,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"CANcoder\")\n  |> filter(fn: (r) => r.device_id == \"24\")\n  |> filter(fn: (r) => r.signal == \"Position\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"16\")\n  |> filter(fn: (r) => r.signal == \"Position\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -1260,7 +1260,7 @@
           {
             "id": 30,
             "type": "timeseries",
-            "title": "Intake Wheels Current",
+            "title": "Right Turret Encoder Positions",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
@@ -1277,13 +1277,13 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"45\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"CANcoder\")\n  |> filter(fn: (r) => r.device_id == \"41\" or r.device_id == \"42\")\n  |> filter(fn: (r) => r.signal == \"Position\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"41\" then \"Right Turret Enc 1\" else if r.device_id == \"42\" then \"Right Turret Enc 2\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
                 "refId": "A"
               }
             ],
             "fieldConfig": {
               "defaults": {
-                "unit": "amp",
+                "unit": "",
                 "custom": {
                   "lineWidth": 1,
                   "fillOpacity": 10,
@@ -1307,9 +1307,9 @@
         ]
       },
       {
-        "id": 35,
+        "id": 34,
         "type": "row",
-        "title": "Indexer + Chamber",
+        "title": "Left Hood",
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -1321,14 +1321,14 @@
           {
             "id": 32,
             "type": "timeseries",
-            "title": "Indexer Current",
+            "title": "Left Hood Current",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
             },
             "gridPos": {
               "h": 8,
-              "w": 8,
+              "w": 12,
               "x": 0,
               "y": 6
             },
@@ -1338,7 +1338,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"26\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"8\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -1368,15 +1368,15 @@
           {
             "id": 33,
             "type": "timeseries",
-            "title": "Chamber Current",
+            "title": "Left Hood Position",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
             },
             "gridPos": {
               "h": 8,
-              "w": 8,
-              "x": 8,
+              "w": 12,
+              "x": 12,
               "y": 6
             },
             "targets": [
@@ -1385,60 +1385,13 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"55\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"8\")\n  |> filter(fn: (r) => r.signal == \"Position\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
             "fieldConfig": {
               "defaults": {
-                "unit": "amp",
-                "custom": {
-                  "lineWidth": 1,
-                  "fillOpacity": 10,
-                  "spanNulls": true,
-                  "axisBorderShow": false
-                }
-              },
-              "overrides": []
-            },
-            "options": {
-              "tooltip": {
-                "mode": "multi",
-                "sort": "desc"
-              },
-              "legend": {
-                "displayMode": "list",
-                "placement": "bottom"
-              }
-            }
-          },
-          {
-            "id": 34,
-            "type": "timeseries",
-            "title": "Indexer + Chamber Velocity",
-            "datasource": {
-              "type": "influxdb",
-              "uid": "fffnbhv0kdukgc"
-            },
-            "gridPos": {
-              "h": 8,
-              "w": 8,
-              "x": 16,
-              "y": 6
-            },
-            "targets": [
-              {
-                "datasource": {
-                  "type": "influxdb",
-                  "uid": "fffnbhv0kdukgc"
-                },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"26\" or r.device_id == \"55\")\n  |> filter(fn: (r) => r.signal == \"Velocity\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"26\" then \"Indexer\" else if r.device_id == \"55\" then \"Chamber\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
-                "refId": "A"
-              }
-            ],
-            "fieldConfig": {
-              "defaults": {
-                "unit": "rot/s",
+                "unit": "",
                 "custom": {
                   "lineWidth": 1,
                   "fillOpacity": 10,
@@ -1462,9 +1415,9 @@
         ]
       },
       {
-        "id": 38,
+        "id": 37,
         "type": "row",
-        "title": "Climber",
+        "title": "Right Hood",
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -1474,9 +1427,9 @@
         "collapsed": true,
         "panels": [
           {
-            "id": 36,
+            "id": 35,
             "type": "timeseries",
-            "title": "Climber Outer Currents",
+            "title": "Right Hood Current",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
@@ -1493,7 +1446,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"23\" or r.device_id == \"6\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"23\" then \"Climber Outer 1\" else if r.device_id == \"6\" then \"Climber Outer 2\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"9\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -1521,9 +1474,9 @@
             }
           },
           {
-            "id": 37,
+            "id": 36,
             "type": "timeseries",
-            "title": "Climber Inner Currents",
+            "title": "Right Hood Position",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
@@ -1540,13 +1493,13 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"15\" or r.device_id == \"56\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"15\" then \"Climber Inner 1\" else if r.device_id == \"56\" then \"Climber Inner 2\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"9\")\n  |> filter(fn: (r) => r.signal == \"Position\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
             "fieldConfig": {
               "defaults": {
-                "unit": "amp",
+                "unit": "",
                 "custom": {
                   "lineWidth": 1,
                   "fillOpacity": 10,
@@ -1572,7 +1525,7 @@
       {
         "id": 41,
         "type": "row",
-        "title": "Power",
+        "title": "Intake",
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -1582,16 +1535,16 @@
         "collapsed": true,
         "panels": [
           {
-            "id": 39,
+            "id": 38,
             "type": "timeseries",
-            "title": "Bus Voltage (FL Drive)",
+            "title": "Intake Arm Current",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
             },
             "gridPos": {
               "h": 8,
-              "w": 12,
+              "w": 8,
               "x": 0,
               "y": 8
             },
@@ -1601,13 +1554,60 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"1\")\n  |> filter(fn: (r) => r.signal == \"SupplyVoltage\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"15\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
             "fieldConfig": {
               "defaults": {
-                "unit": "volt",
+                "unit": "amp",
+                "custom": {
+                  "lineWidth": 1,
+                  "fillOpacity": 10,
+                  "spanNulls": true,
+                  "axisBorderShow": false
+                }
+              },
+              "overrides": []
+            },
+            "options": {
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              },
+              "legend": {
+                "displayMode": "list",
+                "placement": "bottom"
+              }
+            }
+          },
+          {
+            "id": 39,
+            "type": "timeseries",
+            "title": "Intake Arm Position (CANcoder)",
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fffnbhv0kdukgc"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 8,
+              "x": 8,
+              "y": 8
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "influxdb",
+                  "uid": "fffnbhv0kdukgc"
+                },
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"CANcoder\")\n  |> filter(fn: (r) => r.device_id == \"15\")\n  |> filter(fn: (r) => r.signal == \"Position\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "",
                 "custom": {
                   "lineWidth": 1,
                   "fillOpacity": 10,
@@ -1631,15 +1631,15 @@
           {
             "id": 40,
             "type": "timeseries",
-            "title": "All Motor Supply Currents",
+            "title": "Intake Wheels Current",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
             },
             "gridPos": {
               "h": 8,
-              "w": 12,
-              "x": 12,
+              "w": 8,
+              "x": 16,
               "y": 8
             },
             "targets": [
@@ -1648,7 +1648,7 @@
                   "type": "influxdb",
                   "uid": "fffnbhv0kdukgc"
                 },
-                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"1\" or r.device_id == \"3\" or r.device_id == \"6\" or r.device_id == \"15\" or r.device_id == \"16\" or r.device_id == \"17\" or r.device_id == \"18\" or r.device_id == \"19\" or r.device_id == \"23\" or r.device_id == \"26\" or r.device_id == \"28\" or r.device_id == \"32\" or r.device_id == \"40\" or r.device_id == \"45\" or r.device_id == \"48\" or r.device_id == \"50\" or r.device_id == \"51\" or r.device_id == \"52\" or r.device_id == \"55\" or r.device_id == \"56\")\n  |> filter(fn: (r) => r.signal == \"SupplyCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"1\" then \"FL Drive\" else if r.device_id == \"3\" then \"FL Steer\" else if r.device_id == \"6\" then \"Climber Outer 2\" else if r.device_id == \"15\" then \"Climber Inner 1\" else if r.device_id == \"16\" then \"BL Steer\" else if r.device_id == \"17\" then \"BR Steer\" else if r.device_id == \"18\" then \"BL Drive\" else if r.device_id == \"19\" then \"BR Drive\" else if r.device_id == \"23\" then \"Climber Outer 1\" else if r.device_id == \"26\" then \"Indexer\" else if r.device_id == \"28\" then \"FR Steer\" else if r.device_id == \"32\" then \"Turret\" else if r.device_id == \"40\" then \"FR Drive\" else if r.device_id == \"45\" then \"Intake Wheels\" else if r.device_id == \"48\" then \"Intake Arm\" else if r.device_id == \"50\" then \"Flywheel 1\" else if r.device_id == \"51\" then \"Flywheel 2\" else if r.device_id == \"52\" then \"Hood\" else if r.device_id == \"55\" then \"Chamber\" else if r.device_id == \"56\" then \"Climber Inner 2\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"14\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
                 "refId": "A"
               }
             ],
@@ -1680,7 +1680,7 @@
       {
         "id": 46,
         "type": "row",
-        "title": "IMU (Pigeon2)",
+        "title": "Indexer + Chamber",
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -1692,7 +1692,7 @@
           {
             "id": 42,
             "type": "timeseries",
-            "title": "Pigeon AngularVelocityZWorld",
+            "title": "Indexer Current",
             "datasource": {
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
@@ -1702,6 +1702,316 @@
               "w": 6,
               "x": 0,
               "y": 9
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "influxdb",
+                  "uid": "fffnbhv0kdukgc"
+                },
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"13\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "amp",
+                "custom": {
+                  "lineWidth": 1,
+                  "fillOpacity": 10,
+                  "spanNulls": true,
+                  "axisBorderShow": false
+                }
+              },
+              "overrides": []
+            },
+            "options": {
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              },
+              "legend": {
+                "displayMode": "list",
+                "placement": "bottom"
+              }
+            }
+          },
+          {
+            "id": 43,
+            "type": "timeseries",
+            "title": "Left Chamber Current",
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fffnbhv0kdukgc"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 6,
+              "x": 6,
+              "y": 9
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "influxdb",
+                  "uid": "fffnbhv0kdukgc"
+                },
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"6\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "amp",
+                "custom": {
+                  "lineWidth": 1,
+                  "fillOpacity": 10,
+                  "spanNulls": true,
+                  "axisBorderShow": false
+                }
+              },
+              "overrides": []
+            },
+            "options": {
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              },
+              "legend": {
+                "displayMode": "list",
+                "placement": "bottom"
+              }
+            }
+          },
+          {
+            "id": 44,
+            "type": "timeseries",
+            "title": "Right Chamber Current",
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fffnbhv0kdukgc"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 6,
+              "x": 12,
+              "y": 9
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "influxdb",
+                  "uid": "fffnbhv0kdukgc"
+                },
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"17\")\n  |> filter(fn: (r) => r.signal == \"StatorCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "amp",
+                "custom": {
+                  "lineWidth": 1,
+                  "fillOpacity": 10,
+                  "spanNulls": true,
+                  "axisBorderShow": false
+                }
+              },
+              "overrides": []
+            },
+            "options": {
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              },
+              "legend": {
+                "displayMode": "list",
+                "placement": "bottom"
+              }
+            }
+          },
+          {
+            "id": 45,
+            "type": "timeseries",
+            "title": "Indexer + Chamber Velocity",
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fffnbhv0kdukgc"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 6,
+              "x": 18,
+              "y": 9
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "influxdb",
+                  "uid": "fffnbhv0kdukgc"
+                },
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"13\" or r.device_id == \"6\" or r.device_id == \"17\")\n  |> filter(fn: (r) => r.signal == \"Velocity\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"13\" then \"Indexer\" else if r.device_id == \"6\" then \"Left Chamber\" else if r.device_id == \"17\" then \"Right Chamber\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "rot/s",
+                "custom": {
+                  "lineWidth": 1,
+                  "fillOpacity": 10,
+                  "spanNulls": true,
+                  "axisBorderShow": false
+                }
+              },
+              "overrides": []
+            },
+            "options": {
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              },
+              "legend": {
+                "displayMode": "list",
+                "placement": "bottom"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 49,
+        "type": "row",
+        "title": "Power",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 9
+        },
+        "collapsed": true,
+        "panels": [
+          {
+            "id": 47,
+            "type": "timeseries",
+            "title": "Bus Voltage (FL Drive)",
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fffnbhv0kdukgc"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 10
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "influxdb",
+                  "uid": "fffnbhv0kdukgc"
+                },
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"23\")\n  |> filter(fn: (r) => r.signal == \"SupplyVoltage\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\"])",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "volt",
+                "custom": {
+                  "lineWidth": 1,
+                  "fillOpacity": 10,
+                  "spanNulls": true,
+                  "axisBorderShow": false
+                }
+              },
+              "overrides": []
+            },
+            "options": {
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              },
+              "legend": {
+                "displayMode": "list",
+                "placement": "bottom"
+              }
+            }
+          },
+          {
+            "id": 48,
+            "type": "timeseries",
+            "title": "All Motor Supply Currents",
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fffnbhv0kdukgc"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 10
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "influxdb",
+                  "uid": "fffnbhv0kdukgc"
+                },
+                "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"TalonFX\")\n  |> filter(fn: (r) => r.device_id == \"0\" or r.device_id == \"1\" or r.device_id == \"2\" or r.device_id == \"3\" or r.device_id == \"4\" or r.device_id == \"5\" or r.device_id == \"6\" or r.device_id == \"7\" or r.device_id == \"8\" or r.device_id == \"9\" or r.device_id == \"13\" or r.device_id == \"14\" or r.device_id == \"15\" or r.device_id == \"16\" or r.device_id == \"17\" or r.device_id == \"18\" or r.device_id == \"19\" or r.device_id == \"20\" or r.device_id == \"21\" or r.device_id == \"22\" or r.device_id == \"23\")\n  |> filter(fn: (r) => r.signal == \"SupplyCurrent\")\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r.device_id == \"0\" then \"FR Drive\" else if r.device_id == \"1\" then \"FR Steer\" else if r.device_id == \"2\" then \"BL Drive\" else if r.device_id == \"3\" then \"BL Steer\" else if r.device_id == \"4\" then \"Left Flywheel 1\" else if r.device_id == \"5\" then \"Left Flywheel 2\" else if r.device_id == \"6\" then \"Left Chamber\" else if r.device_id == \"7\" then \"Left Turret\" else if r.device_id == \"8\" then \"Left Hood\" else if r.device_id == \"9\" then \"Right Hood\" else if r.device_id == \"13\" then \"Indexer\" else if r.device_id == \"14\" then \"Intake Wheels\" else if r.device_id == \"15\" then \"Intake Arm\" else if r.device_id == \"16\" then \"Right Turret\" else if r.device_id == \"17\" then \"Right Chamber\" else if r.device_id == \"18\" then \"Right Flywheel 2\" else if r.device_id == \"19\" then \"Right Flywheel 1\" else if r.device_id == \"20\" then \"BR Steer\" else if r.device_id == \"21\" then \"BR Drive\" else if r.device_id == \"22\" then \"FL Steer\" else if r.device_id == \"23\" then \"FL Drive\" else r.device_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "amp",
+                "custom": {
+                  "lineWidth": 1,
+                  "fillOpacity": 10,
+                  "spanNulls": true,
+                  "axisBorderShow": false
+                }
+              },
+              "overrides": []
+            },
+            "options": {
+              "tooltip": {
+                "mode": "multi",
+                "sort": "desc"
+              },
+              "legend": {
+                "displayMode": "list",
+                "placement": "bottom"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 54,
+        "type": "row",
+        "title": "IMU (Pigeon2)",
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 10
+        },
+        "collapsed": true,
+        "panels": [
+          {
+            "id": 50,
+            "type": "timeseries",
+            "title": "Pigeon AngularVelocityZWorld",
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fffnbhv0kdukgc"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 6,
+              "x": 0,
+              "y": 11
             },
             "targets": [
               {
@@ -1737,7 +2047,7 @@
             }
           },
           {
-            "id": 43,
+            "id": 51,
             "type": "timeseries",
             "title": "Pigeon Yaw",
             "datasource": {
@@ -1748,7 +2058,7 @@
               "h": 8,
               "w": 6,
               "x": 6,
-              "y": 9
+              "y": 11
             },
             "targets": [
               {
@@ -1784,7 +2094,7 @@
             }
           },
           {
-            "id": 44,
+            "id": 52,
             "type": "timeseries",
             "title": "Pigeon Pitch",
             "datasource": {
@@ -1795,7 +2105,7 @@
               "h": 8,
               "w": 6,
               "x": 12,
-              "y": 9
+              "y": 11
             },
             "targets": [
               {
@@ -1831,7 +2141,7 @@
             }
           },
           {
-            "id": 45,
+            "id": 53,
             "type": "timeseries",
             "title": "Pigeon Roll",
             "datasource": {
@@ -1842,7 +2152,7 @@
               "h": 8,
               "w": 6,
               "x": 18,
-              "y": 9
+              "y": 11
             },
             "targets": [
               {

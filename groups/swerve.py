@@ -1,5 +1,5 @@
 """
-Swerve drive metrics for Slap Shot (FRC 4607, 2026).
+Swerve drive metrics for FRC 4607, 2026 (second robot).
 Analyzes each module's drive and steer TalonFX motors and CANcoders.
 TunerConstants: DriveGearRatio=6.027, SteerGearRatio=26.09, kSlipCurrent=120A
 All motors use TorqueCurrentFOC control.

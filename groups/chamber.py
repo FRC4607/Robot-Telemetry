@@ -1,6 +1,7 @@
 """
-Chamber metrics for Slap Shot (FRC 4607, 2026).
-TalonFX ID 55, VelocityTorqueCurrentFOC, kMaxAmperage=80.
+Chamber metrics for FRC 4607, 2026 (second robot).
+Left Chamber: TalonFX ID 6, Right Chamber: TalonFX ID 17.
+VelocityTorqueCurrentFOC, kMaxAmperage=80.
 """
 
 from typing import Callable, Dict, Tuple
@@ -9,11 +10,18 @@ import numpy as np
 import sys, os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from config.device_map import CHAMBER_MOTOR, CHAMBER_MAX_AMPERAGE, talon_key
+from config.device_map import (
+    LEFT_CHAMBER_MOTOR, LEFT_CHAMBER_MAX_AMPERAGE,
+    RIGHT_CHAMBER_MOTOR, RIGHT_CHAMBER_MAX_AMPERAGE,
+    talon_key,
+)
 
 pd.options.mode.chained_assignment = None
 
-MOTOR_ID = CHAMBER_MOTOR
+CHAMBERS = {
+    "Left": (LEFT_CHAMBER_MOTOR, LEFT_CHAMBER_MAX_AMPERAGE),
+    "Right": (RIGHT_CHAMBER_MOTOR, RIGHT_CHAMBER_MAX_AMPERAGE),
+}
 
 
 def _get_numeric(df: pd.DataFrame, key: str) -> pd.Series:
@@ -26,15 +34,22 @@ def _get_numeric(df: pd.DataFrame, key: str) -> pd.Series:
 
 
 def defineMetrics() -> Dict[str, Callable[[pd.DataFrame], Tuple[int, str]]]:
-    return {
-        "Chamber Max Current": ProcessMaxCurrent,
-        "Chamber Avg Current": ProcessAvgCurrent,
-        "Chamber Max Velocity": ProcessMaxVelocity,
-    }
+    metrics = {}
+    for side, (motor_id, max_amp) in CHAMBERS.items():
+        metrics[f"{side} Chamber Max Current"] = (
+            lambda df, d=motor_id, m=max_amp: _max_current(df, d, m)
+        )
+        metrics[f"{side} Chamber Avg Current"] = (
+            lambda df, d=motor_id: _avg_current(df, d)
+        )
+        metrics[f"{side} Chamber Max Velocity"] = (
+            lambda df, d=motor_id: _max_velocity(df, d)
+        )
+    return metrics
 
 
-def ProcessMaxCurrent(df: pd.DataFrame) -> Tuple[int, str]:
-    key = talon_key(MOTOR_ID, "StatorCurrent")
+def _max_current(df: pd.DataFrame, device_id: int, max_amperage: float) -> Tuple[int, str]:
+    key = talon_key(device_id, "StatorCurrent")
     data = _get_numeric(df, key)
     if data.empty:
         return -1, "metric_not_implemented"
@@ -43,13 +58,13 @@ def ProcessMaxCurrent(df: pd.DataFrame) -> Tuple[int, str]:
         return -1, "insufficient_data"
     smoothed = np.convolve(data.to_numpy(), np.ones(window) / window, "valid")
     max_val = float(smoothed.max())
-    stoplight = 2 if max_val > CHAMBER_MAX_AMPERAGE else (1 if max_val > CHAMBER_MAX_AMPERAGE * 0.75 else 0)
+    stoplight = 2 if max_val > max_amperage else (1 if max_val > max_amperage * 0.75 else 0)
     return stoplight, f"{max_val:.1f} A"
 
 
-def ProcessAvgCurrent(df: pd.DataFrame) -> Tuple[int, str]:
-    curr_key = talon_key(MOTOR_ID, "StatorCurrent")
-    volt_key = talon_key(MOTOR_ID, "MotorVoltage")
+def _avg_current(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
+    curr_key = talon_key(device_id, "StatorCurrent")
+    volt_key = talon_key(device_id, "MotorVoltage")
     currents = _get_numeric(df, curr_key)
     voltages = _get_numeric(df, volt_key)
     if currents.empty:
@@ -68,8 +83,8 @@ def ProcessAvgCurrent(df: pd.DataFrame) -> Tuple[int, str]:
     return stoplight, f"{avg_val:.1f} A"
 
 
-def ProcessMaxVelocity(df: pd.DataFrame) -> Tuple[int, str]:
-    key = talon_key(MOTOR_ID, "Velocity")
+def _max_velocity(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
+    key = talon_key(device_id, "Velocity")
     data = _get_numeric(df, key)
     if data.empty:
         return -1, "metric_not_implemented"

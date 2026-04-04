@@ -1,5 +1,5 @@
 """
-Power / supply voltage metrics for Slap Shot (FRC 4607, 2026).
+Power / supply voltage metrics for FRC 4607, 2026 (second robot).
 Uses SupplyVoltage and SupplyCurrent from all TalonFX devices.
 """
 
