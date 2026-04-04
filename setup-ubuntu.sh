@@ -292,13 +292,17 @@ info "Database schema is up to date."
 # ============================================================================
 # 10. systemd service
 # ============================================================================
-info "Installing systemd service..."
+info "Installing systemd services..."
 sed "s|REPO_DIR_PLACEHOLDER|${REPO_DIR}|g" "${REPO_DIR}/robot-telemetry.service" > /etc/systemd/system/robot-telemetry.service
+sed "s|REPO_DIR_PLACEHOLDER|${REPO_DIR}|g" "${REPO_DIR}/upload-server.service" > /etc/systemd/system/upload-server.service
 systemctl daemon-reload
 systemctl enable robot-telemetry.service
 systemctl restart robot-telemetry.service
+systemctl enable upload-server.service
+systemctl restart upload-server.service
 
 info "robot-telemetry.service is active."
+info "upload-server.service is active (http://localhost:8080)."
 
 # ============================================================================
 # 11. Grafana datasources & dashboards
@@ -376,7 +380,9 @@ echo ""
 echo " PostgreSQL:    localhost:5432  db=${PG_DB}  user=${PG_USER}"
 echo " InfluxDB:      http://localhost:8086  org=${INFLUX_ORG}  bucket=${INFLUX_BUCKET}"
 echo " Grafana:       http://localhost:3000  (login: admin / admin)"
+echo " Upload Server: http://localhost:8080  (drag & drop log files)"
 echo " Service:       systemctl status robot-telemetry"
+echo "                systemctl status upload-server"
 echo ""
 echo " Grafana datasources and dashboards have been configured automatically."
 echo " Dashboards available at:"

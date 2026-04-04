@@ -67,10 +67,14 @@ If you used `setup-ubuntu.sh`, Grafana datasources and dashboards are already co
 
 ## Usage
 
-- Run `python garbage.py -d "[your database url from earlier"]` to start the program. For more configuration option run `python garbage.py --help`.
-- Move `.wpilog` files into the `archive/logs` (by default) to analyze them.
-- The repo comes with three example groups (collections of metrics). You can either use them or delete them. [Learn how to make your own groups](docs/groups.md).
-- Run `python logfile_uploader.py` to start a helper program that will automatically transfer your logs to be analyzed. Enter the IP of your team's RoboRIO (`10.TE.AM.2` usually) and it will start. Keep an ethernet cable plugged into your computer and have the pit crew turn on the robot and plug in the cable when the robot gets back so the program can transfer the logs.  
+- Run `python run.py` to start the telemetry pipeline. It watches `input-logs/` for new `.hoot` directories and processes them automatically.
+- Run `python upload_server.py` to start the upload web server on port 8080. Open `http://<server-ip>:8080` in a browser to drag & drop log files, or use the API:
+  ```bash
+  curl -F "file=@mylog.hoot" http://<server-ip>:8080/api/upload
+  ```
+- Move `.hoot` files or directories into `input-logs/` to analyze them (or upload via the web UI).
+- The repo comes with metric groups in `groups/`. [Learn how to make your own groups](docs/groups.md).
+- Run `python logfile_uploader.py` to start a helper program that will automatically transfer your logs from the RoboRIO. Enter the IP of your team's RoboRIO (`10.TE.AM.2` usually) and it will start. Keep an ethernet cable plugged into your computer and have the pit crew turn on the robot and plug in the cable when the robot gets back so the program can transfer the logs.  
 - >If you are storing your logs on a USB drive or are using a different username/password combo than `lvuser/[no password]`, you will have to change the script yourself.
 - JSON files with the results of the metrics are stored by default in the `archive/metrics` directory. The names are just the name of the log file the metrics came from along with a timestamp.
 - Use the selectors at the top of the Grafana dashboards to change which groups and metrics you are viewing. You can see a complete list of your dashboards by going back to the Dashboards tab.
