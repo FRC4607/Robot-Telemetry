@@ -1,7 +1,7 @@
 """
-Device-to-subsystem mapping for FRC 4607, 2026 (second robot).
+"""Device-to-subsystem mapping for FRC 4607, 2026 (second robot "Power Play").
 CAN bus: "kachow"
-Source: FRC4607/comp-bot2-2026 rework branch
+Source: FRC4607/comp-bot2-2026 main branch (rework merged)
 
 Signal keys in the exported wpilog follow the pattern:
     Phoenix6/TalonFX-{id}/{Signal}
