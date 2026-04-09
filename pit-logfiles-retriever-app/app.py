@@ -42,11 +42,13 @@ ROBORIO_LOG_DIR = "/mnt/sda"
 CLOUD_API_URL = "https://metrics.beckerrobotics.com/api/upload"
 
 LOCAL_CACHE_DIR = "/home/cis/logs-cache"
+LOCAL_PENDING_DIR = os.path.join(LOCAL_CACHE_DIR, "pending")
 
-CONNECT_POLL_SEC = 3        # seconds between connection attempts
-RESCAN_POLL_SEC = 5         # seconds between re-scans while connected
-UPLOAD_RETRIES = 3          # retry count for cloud uploads
-UPLOAD_RETRY_DELAY = 2      # seconds between upload retries
+CONNECT_POLL_SEC = 3  # seconds between connection attempts
+RESCAN_POLL_SEC = 5  # seconds between re-scans while connected
+UPLOAD_RETRIES = 3  # retry count for cloud uploads
+UPLOAD_RETRY_DELAY = 2  # seconds between upload retries
+PENDING_RETRY_SEC = 60  # seconds between pending-upload retry sweeps
 
 WEB_HOST = "0.0.0.0"
 WEB_PORT = 5000
@@ -65,9 +67,9 @@ app = Flask(__name__)
 # ── Shared state ───────────────────────────────────────────────────────────
 _lock = threading.Lock()
 _state = {
-    "state": "waiting",       # waiting | transferring | complete | error
+    "state": "waiting",  # waiting | transferring | complete | error
     "message": "Waiting for robot connection\u2026",
-    "phase": "",              # downloading | uploading | ""
+    "phase": "",  # downloading | uploading | ""
     "current_file": "",
     "files_total": 0,
     "files_completed": 0,
@@ -137,6 +139,10 @@ def _is_cached(filename):
     return os.path.isfile(os.path.join(LOCAL_CACHE_DIR, filename))
 
 
+def _is_pending(filename):
+    return os.path.isfile(os.path.join(LOCAL_PENDING_DIR, filename))
+
+
 # ── Upload helper ──────────────────────────────────────────────────────────
 def _upload_file(filepath, filename, speed_tracker):
     """Upload to cloud API with progress tracking. Returns True on success."""
@@ -167,13 +173,19 @@ def _upload_file(filepath, filename, speed_tracker):
                 return True
             log.warning(
                 "Upload attempt %d/%d for %s returned %d: %s",
-                attempt, UPLOAD_RETRIES, filename, resp.status_code,
+                attempt,
+                UPLOAD_RETRIES,
+                filename,
+                resp.status_code,
                 resp.text[:200],
             )
         except Exception as exc:
             log.warning(
                 "Upload attempt %d/%d for %s failed: %s",
-                attempt, UPLOAD_RETRIES, filename, exc,
+                attempt,
+                UPLOAD_RETRIES,
+                filename,
+                exc,
             )
         if attempt < UPLOAD_RETRIES:
             time.sleep(UPLOAD_RETRY_DELAY)
@@ -183,6 +195,7 @@ def _upload_file(filepath, filename, speed_tracker):
 # ── Worker thread ──────────────────────────────────────────────────────────
 def _worker():
     os.makedirs(LOCAL_CACHE_DIR, exist_ok=True)
+    os.makedirs(LOCAL_PENDING_DIR, exist_ok=True)
 
     while True:
         ssh = None
@@ -191,10 +204,14 @@ def _worker():
             _set(
                 state="waiting",
                 message="Waiting for robot connection\u2026",
-                phase="", current_file="",
-                files_total=0, files_completed=0,
-                file_bytes_done=0, file_bytes_total=0,
-                speed_bps=0.0, error="",
+                phase="",
+                current_file="",
+                files_total=0,
+                files_completed=0,
+                file_bytes_done=0,
+                file_bytes_total=0,
+                speed_bps=0.0,
+                error="",
             )
 
             # ── Connect ───────────────────────────────────────────────
@@ -222,8 +239,9 @@ def _worker():
                 _set(message="Connected \u2014 scanning for log files\u2026")
                 hoot_files = _sftp_find_hoot_files(sftp, ROBORIO_LOG_DIR)
                 new_files = [
-                    (rp, fn, sz) for rp, fn, sz in hoot_files
-                    if not _is_cached(fn)
+                    (rp, fn, sz)
+                    for rp, fn, sz in hoot_files
+                    if not _is_cached(fn) and not _is_pending(fn)
                 ]
 
                 if new_files:
@@ -236,8 +254,11 @@ def _worker():
                 if total > 0:
                     msg = f"{completed}/{total} file(s) transferred. Safe to unplug."
                 _set(
-                    state="complete", message=msg,
-                    phase="", current_file="", speed_bps=0.0,
+                    state="complete",
+                    message=msg,
+                    phase="",
+                    current_file="",
+                    speed_bps=0.0,
                 )
                 log.info("Status: %s", msg)
 
@@ -272,7 +293,8 @@ def _do_transfer(sftp, new_files):
     _set(
         state="transferring",
         message=f"Found {total} log file(s) to transfer",
-        files_total=total, files_completed=0,
+        files_total=total,
+        files_completed=0,
     )
 
     speed = _SpeedTracker()
@@ -281,7 +303,9 @@ def _do_transfer(sftp, new_files):
         file_num = idx + 1
 
         # ── Download ──────────────────────────────────────────────
-        log.info("Downloading [%d/%d]: %s (%d bytes)", file_num, total, filename, file_size)
+        log.info(
+            "Downloading [%d/%d]: %s (%d bytes)", file_num, total, filename, file_size
+        )
         speed.reset()
         _set(
             phase="downloading",
@@ -294,6 +318,7 @@ def _do_transfer(sftp, new_files):
 
         tmp_path = os.path.join(LOCAL_CACHE_DIR, f".{filename}.tmp")
         try:
+
             def _dl_cb(done, tot, _s=speed):
                 _s.update(done)
                 _set(file_bytes_done=done, file_bytes_total=tot, speed_bps=_s.speed)
@@ -332,8 +357,13 @@ def _do_transfer(sftp, new_files):
 
             _set(files_completed=idx + 1)
         else:
-            log.error("Upload failed for %s — keeping on RoboRIO", filename)
-            _safe_remove(tmp_path)
+            log.error("Upload failed for %s — saving to pending", filename)
+            pending_path = os.path.join(LOCAL_PENDING_DIR, filename)
+            try:
+                os.replace(tmp_path, pending_path)
+                log.info("Saved to pending: %s", pending_path)
+            except OSError:
+                _safe_remove(tmp_path)
             _set(error=f"Upload failed: {filename}")
 
 
@@ -342,6 +372,42 @@ def _safe_remove(path):
         os.unlink(path)
     except OSError:
         pass
+
+
+# ── Pending-upload retry thread ────────────────────────────────────────────
+def _pending_retry_worker():
+    """Periodically retry uploading files saved in the pending directory."""
+    os.makedirs(LOCAL_PENDING_DIR, exist_ok=True)
+    speed = _SpeedTracker()
+
+    while True:
+        time.sleep(PENDING_RETRY_SEC)
+        try:
+            pending = [
+                f
+                for f in os.listdir(LOCAL_PENDING_DIR)
+                if f.endswith(".hoot")
+                and os.path.isfile(os.path.join(LOCAL_PENDING_DIR, f))
+            ]
+        except OSError:
+            continue
+
+        if not pending:
+            continue
+
+        log.info("Pending retry: %d file(s) to upload", len(pending))
+        for filename in pending:
+            filepath = os.path.join(LOCAL_PENDING_DIR, filename)
+            speed.reset()
+            if _upload_file(filepath, filename, speed):
+                cache_path = os.path.join(LOCAL_CACHE_DIR, filename)
+                try:
+                    os.replace(filepath, cache_path)
+                except OSError:
+                    pass
+                log.info("Pending retry succeeded: %s", filename)
+            else:
+                log.warning("Pending retry failed: %s — will try again later", filename)
 
 
 # ── Flask routes ───────────────────────────────────────────────────────────
@@ -555,7 +621,7 @@ poll();
 
 # ── Entrypoint ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    thread = threading.Thread(target=_worker, daemon=True)
-    thread.start()
+    threading.Thread(target=_worker, daemon=True).start()
+    threading.Thread(target=_pending_retry_worker, daemon=True).start()
     log.info("Web UI at http://localhost:%d", WEB_PORT)
     app.run(host=WEB_HOST, port=WEB_PORT, debug=False, use_reloader=False)
