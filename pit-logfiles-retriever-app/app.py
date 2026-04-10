@@ -20,9 +20,12 @@ Setup (on the pit device):
     recommended: chromium-browser --kiosk http://localhost:5000 ).
 """
 
+import glob
 import logging
 import os
+import shutil
 import stat as stat_module
+import subprocess
 import tempfile
 import threading
 import time
@@ -53,6 +56,9 @@ PENDING_RETRY_SEC = 60  # seconds between pending-upload retry sweeps
 
 WEB_HOST = "0.0.0.0"
 WEB_PORT = 5000
+
+USB_MOUNT_BASE = "/mnt/pitusb"
+USB_POLL_SEC = 3  # seconds between USB drive checks
 
 # ── Logging ────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -90,6 +96,16 @@ _state = {
     "error": "",
 }
 
+_usb_lock = threading.Lock()
+_usb_state = {
+    "usb_status": "disconnected",  # disconnected | mounted | writing | done
+    "usb_message": "",
+    "usb_files_total": 0,
+    "usb_files_done": 0,
+    "usb_bytes_done": 0,
+    "usb_bytes_total": 0,
+}
+
 
 def _set(**kw):
     with _lock:
@@ -98,7 +114,15 @@ def _set(**kw):
 
 def _get():
     with _lock:
-        return dict(_state)
+        d = dict(_state)
+    with _usb_lock:
+        d.update(_usb_state)
+    return d
+
+
+def _usb_set(**kw):
+    with _usb_lock:
+        _usb_state.update(kw)
 
 
 # ── Speed tracker ──────────────────────────────────────────────────────────
@@ -415,6 +439,195 @@ def _safe_remove(path):
         pass
 
 
+# ── USB flash drive thread ────────────────────────────────────────────────
+def _find_usb_device():
+    """Return the device path of a removable USB block device, or None."""
+    try:
+        for dev in glob.glob("/sys/block/sd*"):
+            removable = os.path.join(dev, "removable")
+            if os.path.isfile(removable):
+                with open(removable) as f:
+                    if f.read().strip() == "1":
+                        name = os.path.basename(dev)
+                        # Find the first partition, or use the raw device
+                        parts = sorted(glob.glob(f"/dev/{name}[0-9]*"))
+                        return parts[0] if parts else f"/dev/{name}"
+    except OSError:
+        pass
+    return None
+
+
+def _is_mounted(device):
+    """Check if a device is currently mounted."""
+    try:
+        with open("/proc/mounts") as f:
+            for line in f:
+                if line.startswith(device + " "):
+                    return True
+    except OSError:
+        pass
+    return False
+
+
+def _mount_usb(device):
+    """Mount the USB device at USB_MOUNT_BASE. Returns True on success."""
+    os.makedirs(USB_MOUNT_BASE, exist_ok=True)
+    try:
+        subprocess.run(
+            ["sudo", "mount", device, USB_MOUNT_BASE],
+            check=True,
+            capture_output=True,
+            timeout=10,
+        )
+        log.info("Mounted USB %s at %s", device, USB_MOUNT_BASE)
+        return True
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        log.warning("Failed to mount USB %s: %s", device, exc)
+        return False
+
+
+def _unmount_usb():
+    """Unmount USB_MOUNT_BASE if mounted."""
+    try:
+        subprocess.run(
+            ["sudo", "umount", USB_MOUNT_BASE],
+            check=True,
+            capture_output=True,
+            timeout=10,
+        )
+        log.info("Unmounted %s", USB_MOUNT_BASE)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        pass
+
+
+def _usb_worker():
+    """Detect USB flash drive, mount it, copy cached .hoot files to it."""
+    last_device = None
+
+    while True:
+        time.sleep(USB_POLL_SEC)
+
+        device = _find_usb_device()
+
+        if device is None:
+            if last_device is not None:
+                # Drive was removed
+                _unmount_usb()
+                log.info("USB drive removed")
+            last_device = None
+            _usb_set(
+                usb_status="disconnected",
+                usb_message="",
+                usb_files_total=0,
+                usb_files_done=0,
+                usb_bytes_done=0,
+                usb_bytes_total=0,
+            )
+            continue
+
+        # Drive detected — mount if needed
+        if not _is_mounted(device):
+            if not _mount_usb(device):
+                _usb_set(usb_status="disconnected", usb_message="Mount failed")
+                last_device = device
+                continue
+
+        last_device = device
+
+        # Find .hoot files in cache + pending that aren't already on the USB
+        all_hoots = []
+        for d in (LOCAL_CACHE_DIR, LOCAL_PENDING_DIR):
+            try:
+                for fn in os.listdir(d):
+                    if fn.endswith(".hoot") and os.path.isfile(os.path.join(d, fn)):
+                        all_hoots.append((os.path.join(d, fn), fn))
+            except OSError:
+                continue
+
+        # Deduplicate by filename (cache takes priority)
+        seen = set()
+        unique_hoots = []
+        for filepath, fn in all_hoots:
+            if fn not in seen:
+                seen.add(fn)
+                unique_hoots.append((filepath, fn))
+
+        # Filter out files already on the USB
+        to_copy = [
+            (fp, fn)
+            for fp, fn in unique_hoots
+            if not os.path.isfile(os.path.join(USB_MOUNT_BASE, fn))
+        ]
+
+        if not to_copy:
+            _usb_set(
+                usb_status="done",
+                usb_message="All files on USB. Safe to remove.",
+                usb_files_total=0,
+                usb_files_done=0,
+            )
+            continue
+
+        # Copy files
+        total = len(to_copy)
+        total_bytes = sum(os.path.getsize(fp) for fp, _ in to_copy)
+        bytes_done = 0
+        log.info("USB: copying %d file(s) to %s", total, USB_MOUNT_BASE)
+        _usb_set(
+            usb_status="writing",
+            usb_message=f"Copying {total} file(s) to USB\u2026",
+            usb_files_total=total,
+            usb_files_done=0,
+            usb_bytes_total=total_bytes,
+            usb_bytes_done=0,
+        )
+
+        for idx, (filepath, fn) in enumerate(to_copy):
+            dest = os.path.join(USB_MOUNT_BASE, fn)
+            tmp_dest = dest + ".tmp"
+            try:
+                file_size = os.path.getsize(filepath)
+                with open(filepath, "rb") as src, open(tmp_dest, "wb") as dst:
+                    while True:
+                        chunk = src.read(1024 * 256)  # 256KB chunks
+                        if not chunk:
+                            break
+                        dst.write(chunk)
+                        bytes_done += len(chunk)
+                        _usb_set(usb_bytes_done=bytes_done)
+                os.replace(tmp_dest, dest)
+                _usb_set(
+                    usb_files_done=idx + 1,
+                    usb_message=(
+                        f"Copying {idx + 2}/{total}\u2026"
+                        if idx + 1 < total
+                        else "Syncing\u2026"
+                    ),
+                )
+                log.info("USB: copied %s", fn)
+            except OSError as exc:
+                log.warning("USB: failed to copy %s: %s", fn, exc)
+                _safe_remove(tmp_dest)
+                # Drive may have been yanked
+                if not os.path.ismount(USB_MOUNT_BASE):
+                    _usb_set(usb_status="disconnected", usb_message="")
+                    break
+
+        # Sync to ensure data is flushed to the drive
+        try:
+            subprocess.run(["sudo", "sync"], timeout=30, capture_output=True)
+        except (subprocess.TimeoutExpired, OSError):
+            pass
+
+        if os.path.ismount(USB_MOUNT_BASE):
+            _usb_set(
+                usb_status="done",
+                usb_message="All files on USB. Safe to remove.",
+                usb_files_done=total,
+            )
+            log.info("USB: all files copied, safe to remove")
+
+
 # ── Cloud upload thread ────────────────────────────────────────────────────
 def _pending_retry_worker():
     """Upload files from the pending directory to the cloud API."""
@@ -516,6 +729,24 @@ body.transferring .icon{animation:pulse 1.6s ease-in-out infinite}
 
 @keyframes glow{0%,100%{filter:drop-shadow(0 0 8px rgba(255,255,255,.4))}50%{filter:drop-shadow(0 0 20px rgba(255,255,255,.7))}}
 body.complete .icon{animation:glow 3s ease-in-out infinite}
+
+.usb-badge{
+  position:fixed;bottom:1.2rem;right:1.2rem;
+  display:flex;align-items:center;gap:.5rem;
+  padding:.5rem .9rem;border-radius:10px;
+  font-size:.95rem;font-weight:600;
+  background:rgba(0,0,0,.35);color:#94a3b8;
+  transition:background .3s,color .3s;
+}
+.usb-badge svg{width:22px;height:22px;flex-shrink:0}
+.usb-badge.disconnected{opacity:.4}
+.usb-badge.mounted{background:rgba(0,0,0,.35);color:#94a3b8}
+.usb-badge.writing{background:rgba(234,179,8,.25);color:#fbbf24}
+.usb-badge.done{background:rgba(34,197,94,.25);color:#4ade80}
+@keyframes usb-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.usb-badge.writing{animation:usb-pulse 1.2s ease-in-out infinite}
+.usb-bar-wrap{width:80px;height:6px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden}
+.usb-bar{height:100%;background:currentColor;border-radius:3px;width:0%;transition:width .3s ease}
 </style>
 </head>
 <body class="waiting">
@@ -595,6 +826,12 @@ body.complete .icon{animation:glow 3s ease-in-out infinite}
 <div class="detail" id="detail"></div>
 <div class="phase" id="phase"></div>
 
+<div class="usb-badge disconnected" id="usb-badge">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18l-2-2V8l2-2"/><path d="M18 18l2-2V8l-2-2"/><line x1="12" y1="2" x2="12" y2="8"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="14" x2="12" y2="22"/><line x1="7" y1="5" x2="12" y2="8"/><line x1="17" y1="5" x2="12" y2="8"/></svg>
+  <span id="usb-text">USB not detected</span>
+  <div class="usb-bar-wrap" id="usb-bar-wrap" style="display:none"><div class="usb-bar" id="usb-bar"></div></div>
+</div>
+
 <script>
 function fmtB(b){
   if(b<1024)return b+' B';
@@ -662,6 +899,29 @@ async function poll(){
     msg.textContent=d.error||d.message;
     bw.style.display='none';sp.textContent='';det.textContent='';ph.textContent='';
   }
+
+  // ── USB badge ──
+  const ub=document.getElementById('usb-badge'),
+        ut=document.getElementById('usb-text'),
+        ubw=document.getElementById('usb-bar-wrap'),
+        ubar=document.getElementById('usb-bar');
+  const us=d.usb_status||'disconnected';
+  ub.className='usb-badge '+us;
+  if(us==='disconnected'){
+    ut.textContent='USB not detected';
+    ubw.style.display='none';
+  }else if(us==='mounted'){
+    ut.textContent='USB ready';
+    ubw.style.display='none';
+  }else if(us==='writing'){
+    const pct=d.usb_bytes_total>0?(d.usb_bytes_done/d.usb_bytes_total*100).toFixed(0):'0';
+    ut.textContent='USB '+d.usb_files_done+'/'+d.usb_files_total+' ('+pct+'%)';
+    ubw.style.display='block';
+    ubar.style.width=pct+'%';
+  }else if(us==='done'){
+    ut.textContent='USB \u2714 Safe to remove';
+    ubw.style.display='none';
+  }
  }catch(e){}
 }
 
@@ -676,5 +936,6 @@ poll();
 if __name__ == "__main__":
     threading.Thread(target=_worker, daemon=True).start()
     threading.Thread(target=_pending_retry_worker, daemon=True).start()
+    threading.Thread(target=_usb_worker, daemon=True).start()
     log.info("Web UI at http://localhost:%d", WEB_PORT)
     app.run(host=WEB_HOST, port=WEB_PORT, debug=False, use_reloader=False)
