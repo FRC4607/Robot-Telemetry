@@ -404,22 +404,6 @@ def _do_transfer(sftp, new_files):
             log.info("Deleted from RoboRIO: %s", remote_path)
         except Exception as exc:
             log.warning("Could not delete %s from RoboRIO: %s", remote_path, exc)
-            # Fall back to rm via SSH exec if SFTP remove fails
-            try:
-                transport = sftp.get_channel().get_transport()
-                if transport and transport.is_active():
-                    session = transport.open_session()
-                    session.exec_command(f"rm -f {remote_path}")
-                    exit_status = session.recv_exit_status()
-                    session.close()
-                    if exit_status == 0:
-                        log.info("Deleted via SSH exec: %s", remote_path)
-                    else:
-                        log.warning(
-                            "SSH rm failed for %s (exit %d)", remote_path, exit_status
-                        )
-            except Exception as exc2:
-                log.warning("SSH exec fallback failed for %s: %s", remote_path, exc2)
 
     # ── Queue cloud uploads for the background uploader thread ──
     for tmp_path, filename, remote_path in downloaded:
