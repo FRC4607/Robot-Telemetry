@@ -22,7 +22,7 @@ Key constants are defined at the top of `app.py`:
 |----------|---------|-------------|
 | `ROBORIO_IP` | `10.46.7.2` | RoboRIO IP address (team 4607) |
 | `ROBORIO_LOG_DIR` | `/mnt/sda` | Directory on the RoboRIO where `.hoot` files are stored |
-| `CLOUD_API_URL` | `https://metrics.beckerrobotics.com/api/upload` | Upload endpoint |
+| `CLOUD_API_URL` | `https://telemetry.beckerrobotics.com/api/upload` | Upload endpoint |
 | `LOCAL_CACHE_DIR` | `/home/cis/logs-cache` | Local cache directory for downloaded logs |
 
 ## Setup

@@ -39,7 +39,7 @@ ROBORIO_USER = "admin"
 ROBORIO_PASSWORD = ""
 ROBORIO_LOG_DIR = "/media"
 
-CLOUD_API_URL = "https://metrics.beckerrobotics.com/api/upload"
+CLOUD_API_URL = "https://telemetry.beckerrobotics.com/api/upload"
 
 LOCAL_CACHE_DIR = "/home/cis/logs-cache"
 LOCAL_PENDING_DIR = os.path.join(LOCAL_CACHE_DIR, "pending")
