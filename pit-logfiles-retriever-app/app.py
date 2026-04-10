@@ -37,7 +37,7 @@ ROBORIO_IP = "10.46.7.2"
 ROBORIO_PORT = 22
 ROBORIO_USER = "admin"
 ROBORIO_PASSWORD = ""
-ROBORIO_LOG_DIR = "/mnt/sda"
+ROBORIO_LOG_DIR = "/mnt"
 
 CLOUD_API_URL = "https://metrics.beckerrobotics.com/api/upload"
 
@@ -60,6 +60,16 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 log = logging.getLogger("pit-retriever")
+
+
+# Suppress Werkzeug request logging for the polling endpoint
+class _QuietStatusFilter(logging.Filter):
+    def filter(self, record):
+        msg = record.getMessage()
+        return "/api/status" not in msg
+
+
+logging.getLogger("werkzeug").addFilter(_QuietStatusFilter())
 
 # ── Flask ──────────────────────────────────────────────────────────────────
 app = Flask(__name__)
@@ -227,6 +237,9 @@ def _worker():
                 timeout=5,
                 banner_timeout=10,
             )
+            transport = ssh.get_transport()
+            if transport:
+                transport.set_keepalive(2)  # send SSH keepalive every 2s
             sftp = ssh.open_sftp()
             log.info("Connected to RoboRIO at %s", ROBORIO_IP)
 
@@ -262,9 +275,17 @@ def _worker():
                 )
                 log.info("Status: %s", msg)
 
-                # Keep-alive and re-scan after a delay
+                # Wait then verify the connection is still alive
                 time.sleep(RESCAN_POLL_SEC)
-                transport.send_ignore()
+                transport = ssh.get_transport()
+                if not transport or not transport.is_active():
+                    log.info("Robot disconnected (transport inactive)")
+                    break
+                try:
+                    transport.send_ignore()
+                except (paramiko.SSHException, OSError, EOFError):
+                    log.info("Robot disconnected (keepalive failed)")
+                    break
 
         except (paramiko.SSHException, OSError, TimeoutError):
             pass  # normal when robot isn't reachable
@@ -583,7 +604,7 @@ async function poll(){
     bw.style.display='none';sp.textContent='';det.textContent='';ph.textContent='';
   }
   else if(d.state==='transferring'){
-    icon.innerHTML='<span style="font-size:8rem">&#128308;</span>';
+    icon.innerHTML='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="46" fill="#fff" stroke="rgba(255,255,255,.3)" stroke-width="4"/><rect x="30" y="44" width="40" height="12" rx="2" fill="#dc2626"/></svg>';
     st.textContent='DO NOT UNPLUG';
     msg.textContent=d.message;
     if(d.file_bytes_total>0){
@@ -596,7 +617,7 @@ async function poll(){
     }else{bw.style.display='none';sp.textContent='';det.textContent='';ph.textContent='';}
   }
   else if(d.state==='complete'){
-    icon.innerHTML='<span style="font-size:8rem">&#9989;</span>';
+    icon.innerHTML='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="46" fill="#fff" stroke="rgba(255,255,255,.3)" stroke-width="4"/><path d="M28 52 L44 68 L72 34" fill="none" stroke="#16a34a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     st.textContent='SAFE TO UNPLUG';
     msg.textContent=d.message;
     bw.style.display='none';sp.textContent='';
@@ -604,7 +625,7 @@ async function poll(){
     ph.textContent='';
   }
   else if(d.state==='error'){
-    icon.innerHTML='<span style="font-size:8rem">&#9888;&#65039;</span>';
+    icon.innerHTML='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50,8 96,88 4,88" fill="#fff" stroke="rgba(255,255,255,.3)" stroke-width="3" stroke-linejoin="round"/><text x="50" y="76" text-anchor="middle" font-size="52" font-weight="bold" fill="#d97706">!</text></svg>';
     st.textContent='ERROR';
     msg.textContent=d.error||d.message;
     bw.style.display='none';sp.textContent='';det.textContent='';ph.textContent='';
