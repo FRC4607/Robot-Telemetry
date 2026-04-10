@@ -43,6 +43,7 @@ CLOUD_API_URL = "https://telemetry.beckerrobotics.com/api/upload"
 
 LOCAL_CACHE_DIR = "/home/cis/logs-cache"
 LOCAL_PENDING_DIR = os.path.join(LOCAL_CACHE_DIR, "pending")
+LOCAL_REJECTED_DIR = os.path.join(LOCAL_CACHE_DIR, "rejected")
 
 CONNECT_POLL_SEC = 3  # seconds between connection attempts
 RESCAN_POLL_SEC = 5  # seconds between re-scans while connected
@@ -178,9 +179,18 @@ def _is_pending(filename):
     return os.path.isfile(os.path.join(LOCAL_PENDING_DIR, filename))
 
 
+def _is_rejected(filename):
+    return os.path.isfile(os.path.join(LOCAL_REJECTED_DIR, filename))
+
+
 # ── Upload helper ──────────────────────────────────────────────────────────
 def _upload_file(filepath, filename, speed_tracker):
-    """Upload to cloud API with progress tracking. Returns True on success."""
+    """Upload to cloud API with progress tracking.
+
+    Returns ``"ok"`` on success, ``"rejected"`` when the server
+    permanently rejected the file (4xx), or ``"failed"`` for transient
+    errors worth retrying later.
+    """
     for attempt in range(1, UPLOAD_RETRIES + 1):
         try:
             with open(filepath, "rb") as f:
@@ -205,7 +215,7 @@ def _upload_file(filepath, filename, speed_tracker):
                     timeout=300,
                 )
             if resp.status_code == 200:
-                return True
+                return "ok"
             log.warning(
                 "Upload attempt %d/%d for %s returned %d: %s",
                 attempt,
@@ -214,6 +224,9 @@ def _upload_file(filepath, filename, speed_tracker):
                 resp.status_code,
                 resp.text[:200],
             )
+            # 4xx = permanent rejection (bad file, invalid name, etc.)
+            if 400 <= resp.status_code < 500:
+                return "rejected"
         except Exception as exc:
             log.warning(
                 "Upload attempt %d/%d for %s failed: %s",
@@ -224,7 +237,7 @@ def _upload_file(filepath, filename, speed_tracker):
             )
         if attempt < UPLOAD_RETRIES:
             time.sleep(UPLOAD_RETRY_DELAY)
-    return False
+    return "failed"
 
 
 # ── Worker thread ──────────────────────────────────────────────────────────
@@ -279,7 +292,9 @@ def _worker():
                 new_files = [
                     (rp, fn, sz)
                     for rp, fn, sz in hoot_files
-                    if not _is_cached(fn) and not _is_pending(fn)
+                    if not _is_cached(fn)
+                    and not _is_pending(fn)
+                    and not _is_rejected(fn)
                 ]
                 # Only transfer files that aren't actively being written to
                 new_files = _filter_stable_files(sftp, new_files)
@@ -412,6 +427,7 @@ def _safe_remove(path):
 def _pending_retry_worker():
     """Upload files from the pending directory to the cloud API."""
     os.makedirs(LOCAL_PENDING_DIR, exist_ok=True)
+    os.makedirs(LOCAL_REJECTED_DIR, exist_ok=True)
     speed = _SpeedTracker()
 
     while True:
@@ -433,13 +449,21 @@ def _pending_retry_worker():
         for filename in pending:
             filepath = os.path.join(LOCAL_PENDING_DIR, filename)
             speed.reset()
-            if _upload_file(filepath, filename, speed):
+            result = _upload_file(filepath, filename, speed)
+            if result == "ok":
                 cache_path = os.path.join(LOCAL_CACHE_DIR, filename)
                 try:
                     os.replace(filepath, cache_path)
                 except OSError:
                     pass
                 log.info("Cloud upload succeeded: %s", filename)
+            elif result == "rejected":
+                rejected_path = os.path.join(LOCAL_REJECTED_DIR, filename)
+                try:
+                    os.replace(filepath, rejected_path)
+                except OSError:
+                    pass
+                log.warning("Cloud upload rejected: %s — moved to rejected/", filename)
             else:
                 log.warning("Cloud upload failed: %s — will retry later", filename)
 
