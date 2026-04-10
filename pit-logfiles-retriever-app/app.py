@@ -472,18 +472,22 @@ def _is_mounted(device):
 def _mount_usb(device):
     """Mount the USB device at USB_MOUNT_BASE. Returns True on success."""
     os.makedirs(USB_MOUNT_BASE, exist_ok=True)
-    try:
-        subprocess.run(
-            ["sudo", "mount", device, USB_MOUNT_BASE],
-            check=True,
-            capture_output=True,
-            timeout=10,
-        )
-        log.info("Mounted USB %s at %s", device, USB_MOUNT_BASE)
-        return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
-        log.warning("Failed to mount USB %s: %s", device, exc)
-        return False
+    uid = os.getuid()
+    gid = os.getgid()
+    # Try with uid/gid options first (works for FAT/exFAT/NTFS)
+    for opts in [f"uid={uid},gid={gid}", None]:
+        try:
+            cmd = ["sudo", "mount"]
+            if opts:
+                cmd += ["-o", opts]
+            cmd += [device, USB_MOUNT_BASE]
+            subprocess.run(cmd, check=True, capture_output=True, timeout=10)
+            log.info("Mounted USB %s at %s", device, USB_MOUNT_BASE)
+            return True
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            if opts is None:
+                log.warning("Failed to mount USB %s", device)
+    return False
 
 
 def _unmount_usb():
@@ -572,6 +576,7 @@ def _usb_worker():
         total = len(to_copy)
         total_bytes = sum(os.path.getsize(fp) for fp, _ in to_copy)
         bytes_done = 0
+        copied = 0
         log.info("USB: copying %d file(s) to %s", total, USB_MOUNT_BASE)
         _usb_set(
             usb_status="writing",
@@ -596,8 +601,9 @@ def _usb_worker():
                         bytes_done += len(chunk)
                         _usb_set(usb_bytes_done=bytes_done)
                 os.replace(tmp_dest, dest)
+                copied += 1
                 _usb_set(
-                    usb_files_done=idx + 1,
+                    usb_files_done=copied,
                     usb_message=(
                         f"Copying {idx + 2}/{total}\u2026"
                         if idx + 1 < total
@@ -620,12 +626,26 @@ def _usb_worker():
             pass
 
         if os.path.ismount(USB_MOUNT_BASE):
-            _usb_set(
-                usb_status="done",
-                usb_message="All files on USB. Safe to remove.",
-                usb_files_done=total,
-            )
-            log.info("USB: all files copied, safe to remove")
+            if copied == total:
+                _usb_set(
+                    usb_status="done",
+                    usb_message="All files on USB. Safe to remove.",
+                    usb_files_done=copied,
+                )
+                log.info("USB: all files copied, safe to remove")
+            elif copied > 0:
+                _usb_set(
+                    usb_status="done",
+                    usb_message=f"{copied}/{total} copied. Safe to remove.",
+                    usb_files_done=copied,
+                )
+                log.warning("USB: %d/%d files copied (some failed)", copied, total)
+            else:
+                _usb_set(
+                    usb_status="mounted",
+                    usb_message=f"Write failed — check permissions",
+                )
+                log.error("USB: all copies failed — permission denied?")
 
 
 # ── Cloud upload thread ────────────────────────────────────────────────────
