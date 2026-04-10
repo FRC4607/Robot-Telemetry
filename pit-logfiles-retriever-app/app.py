@@ -589,8 +589,11 @@ def _usb_worker():
 
         for idx, (filepath, fn) in enumerate(to_copy):
             dest = os.path.join(USB_MOUNT_BASE, fn)
+            file_size = os.path.getsize(filepath)
+            _usb_set(
+                usb_message=f"Copying {idx + 1}/{total}: {fn}",
+            )
             try:
-                file_size = os.path.getsize(filepath)
                 subprocess.run(
                     ["sudo", "cp", filepath, dest],
                     check=True,
@@ -602,11 +605,6 @@ def _usb_worker():
                 _usb_set(
                     usb_bytes_done=bytes_done,
                     usb_files_done=copied,
-                    usb_message=(
-                        f"Copying {idx + 2}/{total}\u2026"
-                        if idx + 1 < total
-                        else "Syncing\u2026"
-                    ),
                 )
                 log.info("USB: copied %s", fn)
             except subprocess.CalledProcessError as exc:
