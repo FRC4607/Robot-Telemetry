@@ -37,7 +37,7 @@ ROBORIO_IP = "10.46.7.2"
 ROBORIO_PORT = 22
 ROBORIO_USER = "admin"
 ROBORIO_PASSWORD = ""
-ROBORIO_LOG_DIR = "/mnt"
+ROBORIO_LOG_DIR = "/media"
 
 CLOUD_API_URL = "https://metrics.beckerrobotics.com/api/upload"
 
@@ -581,6 +581,7 @@ function fmtS(s){
 }
 
 const _ethSvg=document.getElementById('icon').innerHTML;
+let _prevState='';
 
 async function poll(){
  try{
@@ -594,17 +595,19 @@ async function poll(){
         sp=document.getElementById('speed'),
         det=document.getElementById('detail'),
         ph=document.getElementById('phase');
+  const changed=d.state!==_prevState;
+  _prevState=d.state;
 
   B.className=d.state;
 
   if(d.state==='waiting'){
-    if(!icon.querySelector('svg'))icon.innerHTML=_ethSvg;
+    if(changed)icon.innerHTML=_ethSvg;
     st.textContent='WAITING FOR ROBOT';
     msg.textContent=d.message;
     bw.style.display='none';sp.textContent='';det.textContent='';ph.textContent='';
   }
   else if(d.state==='transferring'){
-    icon.innerHTML='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="46" fill="#fff" stroke="rgba(255,255,255,.3)" stroke-width="4"/><rect x="30" y="44" width="40" height="12" rx="2" fill="#dc2626"/></svg>';
+    if(changed)icon.innerHTML='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="46" fill="#fff" stroke="rgba(255,255,255,.3)" stroke-width="4"/><rect x="30" y="44" width="40" height="12" rx="2" fill="#dc2626"/></svg>';
     st.textContent='DO NOT UNPLUG';
     msg.textContent=d.message;
     if(d.file_bytes_total>0){
@@ -617,7 +620,7 @@ async function poll(){
     }else{bw.style.display='none';sp.textContent='';det.textContent='';ph.textContent='';}
   }
   else if(d.state==='complete'){
-    icon.innerHTML='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="46" fill="#fff" stroke="rgba(255,255,255,.3)" stroke-width="4"/><path d="M28 52 L44 68 L72 34" fill="none" stroke="#16a34a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    if(changed)icon.innerHTML='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="46" fill="#fff" stroke="rgba(255,255,255,.3)" stroke-width="4"/><path d="M28 52 L44 68 L72 34" fill="none" stroke="#16a34a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     st.textContent='SAFE TO UNPLUG';
     msg.textContent=d.message;
     bw.style.display='none';sp.textContent='';
@@ -625,7 +628,7 @@ async function poll(){
     ph.textContent='';
   }
   else if(d.state==='error'){
-    icon.innerHTML='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50,8 96,88 4,88" fill="#fff" stroke="rgba(255,255,255,.3)" stroke-width="3" stroke-linejoin="round"/><text x="50" y="76" text-anchor="middle" font-size="52" font-weight="bold" fill="#d97706">!</text></svg>';
+    if(changed)icon.innerHTML='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50,8 96,88 4,88" fill="#fff" stroke="rgba(255,255,255,.3)" stroke-width="3" stroke-linejoin="round"/><text x="50" y="76" text-anchor="middle" font-size="52" font-weight="bold" fill="#d97706">!</text></svg>';
     st.textContent='ERROR';
     msg.textContent=d.error||d.message;
     bw.style.display='none';sp.textContent='';det.textContent='';ph.textContent='';
