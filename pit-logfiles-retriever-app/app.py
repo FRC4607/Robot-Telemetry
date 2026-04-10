@@ -589,20 +589,18 @@ def _usb_worker():
 
         for idx, (filepath, fn) in enumerate(to_copy):
             dest = os.path.join(USB_MOUNT_BASE, fn)
-            tmp_dest = dest + ".tmp"
             try:
                 file_size = os.path.getsize(filepath)
-                with open(filepath, "rb") as src, open(tmp_dest, "wb") as dst:
-                    while True:
-                        chunk = src.read(1024 * 256)  # 256KB chunks
-                        if not chunk:
-                            break
-                        dst.write(chunk)
-                        bytes_done += len(chunk)
-                        _usb_set(usb_bytes_done=bytes_done)
-                os.replace(tmp_dest, dest)
+                subprocess.run(
+                    ["sudo", "cp", filepath, dest],
+                    check=True,
+                    capture_output=True,
+                    timeout=120,
+                )
+                bytes_done += file_size
                 copied += 1
                 _usb_set(
+                    usb_bytes_done=bytes_done,
                     usb_files_done=copied,
                     usb_message=(
                         f"Copying {idx + 2}/{total}\u2026"
@@ -611,13 +609,16 @@ def _usb_worker():
                     ),
                 )
                 log.info("USB: copied %s", fn)
-            except OSError as exc:
+            except subprocess.CalledProcessError as exc:
                 log.warning("USB: failed to copy %s: %s", fn, exc)
-                _safe_remove(tmp_dest)
                 # Drive may have been yanked
                 if not os.path.ismount(USB_MOUNT_BASE):
                     _usb_set(usb_status="disconnected", usb_message="")
                     break
+            except subprocess.TimeoutExpired:
+                log.warning("USB: copy timed out for %s", fn)
+            except OSError as exc:
+                log.warning("USB: failed to copy %s: %s", fn, exc)
 
         # Sync to ensure data is flushed to the drive
         try:
