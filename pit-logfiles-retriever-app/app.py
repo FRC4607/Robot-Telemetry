@@ -145,6 +145,31 @@ def _sftp_find_hoot_files(sftp, remote_dir):
     return results
 
 
+def _filter_stable_files(sftp, hoot_files, delay=2):
+    """Return only files whose size hasn't changed over a short delay,
+    indicating they are not actively being written to."""
+    if not hoot_files:
+        return []
+    time.sleep(delay)
+    stable = []
+    for remote_path, filename, size1 in hoot_files:
+        try:
+            attr = sftp.stat(remote_path)
+            size2 = attr.st_size or 0
+        except IOError:
+            continue  # file disappeared
+        if size1 == size2:
+            stable.append((remote_path, filename, size2))
+        else:
+            log.info(
+                "Skipping %s — file is still being written (%d → %d bytes)",
+                filename,
+                size1,
+                size2,
+            )
+    return stable
+
+
 def _is_cached(filename):
     return os.path.isfile(os.path.join(LOCAL_CACHE_DIR, filename))
 
@@ -256,6 +281,8 @@ def _worker():
                     for rp, fn, sz in hoot_files
                     if not _is_cached(fn) and not _is_pending(fn)
                 ]
+                # Only transfer files that aren't actively being written to
+                new_files = _filter_stable_files(sftp, new_files)
 
                 if new_files:
                     _do_transfer(sftp, new_files)
@@ -307,7 +334,7 @@ def _worker():
 
 
 def _do_transfer(sftp, new_files):
-    """Download each file from the RoboRIO, upload to cloud, cache, delete."""
+    """Download files from the RoboRIO, then upload to cloud after going green."""
     total = len(new_files)
     log.info("Found %d new file(s) to transfer", total)
 
@@ -319,11 +346,12 @@ def _do_transfer(sftp, new_files):
     )
 
     speed = _SpeedTracker()
+    downloaded = []  # list of (tmp_path, filename, remote_path)
 
+    # ── Phase 1: Download all files from RoboRIO (robot must stay plugged in) ──
     for idx, (remote_path, filename, file_size) in enumerate(new_files):
         file_num = idx + 1
 
-        # ── Download ──────────────────────────────────────────────
         log.info(
             "Downloading [%d/%d]: %s (%d bytes)", file_num, total, filename, file_size
         )
@@ -351,41 +379,26 @@ def _do_transfer(sftp, new_files):
             _set(error=f"Download failed: {filename}")
             continue
 
-        # ── Upload ────────────────────────────────────────────────
-        log.info("Uploading [%d/%d]: %s", file_num, total, filename)
-        speed.reset()
-        upload_size = os.path.getsize(tmp_path)
-        _set(
-            phase="uploading",
-            file_bytes_done=0,
-            file_bytes_total=upload_size,
-            speed_bps=0.0,
-            message=f"Uploading {file_num}/{total}: {filename}",
-        )
+        downloaded.append((tmp_path, filename, remote_path))
+        _set(files_completed=file_num)
 
-        if _upload_file(tmp_path, filename, speed):
-            # Cache locally
-            cache_path = os.path.join(LOCAL_CACHE_DIR, filename)
-            os.replace(tmp_path, cache_path)
-            log.info("Cached: %s", cache_path)
+    # ── Phase 2: Delete originals from RoboRIO while still connected ──
+    for tmp_path, filename, remote_path in downloaded:
+        try:
+            sftp.remove(remote_path)
+            log.info("Deleted from RoboRIO: %s", remote_path)
+        except Exception as exc:
+            log.warning("Could not delete %s from RoboRIO: %s", remote_path, exc)
 
-            # Delete from RoboRIO
-            try:
-                sftp.remove(remote_path)
-                log.info("Deleted from RoboRIO: %s", remote_path)
-            except Exception as exc:
-                log.warning("Could not delete %s from RoboRIO: %s", remote_path, exc)
+    # ── Queue cloud uploads for the background uploader thread ──
+    for tmp_path, filename, remote_path in downloaded:
+        pending_path = os.path.join(LOCAL_PENDING_DIR, filename)
+        try:
+            os.replace(tmp_path, pending_path)
+        except OSError:
+            log.warning("Could not move %s to pending", filename)
 
-            _set(files_completed=idx + 1)
-        else:
-            log.error("Upload failed for %s — saving to pending", filename)
-            pending_path = os.path.join(LOCAL_PENDING_DIR, filename)
-            try:
-                os.replace(tmp_path, pending_path)
-                log.info("Saved to pending: %s", pending_path)
-            except OSError:
-                _safe_remove(tmp_path)
-            _set(error=f"Upload failed: {filename}")
+    log.info("Downloads complete — %d file(s) queued for cloud upload", len(downloaded))
 
 
 def _safe_remove(path):
@@ -395,14 +408,14 @@ def _safe_remove(path):
         pass
 
 
-# ── Pending-upload retry thread ────────────────────────────────────────────
+# ── Cloud upload thread ────────────────────────────────────────────────────
 def _pending_retry_worker():
-    """Periodically retry uploading files saved in the pending directory."""
+    """Upload files from the pending directory to the cloud API."""
     os.makedirs(LOCAL_PENDING_DIR, exist_ok=True)
     speed = _SpeedTracker()
 
     while True:
-        time.sleep(PENDING_RETRY_SEC)
+        time.sleep(5)  # check frequently for newly queued files
         try:
             pending = [
                 f
@@ -416,7 +429,7 @@ def _pending_retry_worker():
         if not pending:
             continue
 
-        log.info("Pending retry: %d file(s) to upload", len(pending))
+        log.info("Cloud upload: %d file(s) to upload", len(pending))
         for filename in pending:
             filepath = os.path.join(LOCAL_PENDING_DIR, filename)
             speed.reset()
@@ -426,9 +439,9 @@ def _pending_retry_worker():
                     os.replace(filepath, cache_path)
                 except OSError:
                     pass
-                log.info("Pending retry succeeded: %s", filename)
+                log.info("Cloud upload succeeded: %s", filename)
             else:
-                log.warning("Pending retry failed: %s — will try again later", filename)
+                log.warning("Cloud upload failed: %s — will retry later", filename)
 
 
 # ── Flask routes ───────────────────────────────────────────────────────────
