@@ -397,14 +397,6 @@ def _do_transfer(sftp, new_files):
         downloaded.append((tmp_path, filename, remote_path))
         _set(files_completed=file_num)
 
-    # ── Phase 2: Delete originals from RoboRIO while still connected ──
-    for tmp_path, filename, remote_path in downloaded:
-        try:
-            sftp.remove(remote_path)
-            log.info("Deleted from RoboRIO: %s", remote_path)
-        except Exception as exc:
-            log.warning("Could not delete %s from RoboRIO: %s", remote_path, exc)
-
     # ── Queue cloud uploads for the background uploader thread ──
     for tmp_path, filename, remote_path in downloaded:
         pending_path = os.path.join(LOCAL_PENDING_DIR, filename)
