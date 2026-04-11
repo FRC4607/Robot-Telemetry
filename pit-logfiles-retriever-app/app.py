@@ -195,16 +195,50 @@ def _filter_stable_files(sftp, hoot_files, delay=2):
     return stable
 
 
-def _is_cached(filename):
-    return os.path.isfile(os.path.join(LOCAL_CACHE_DIR, filename))
+# ── Download manifest ──────────────────────────────────────────────────────
+_MANIFEST_PATH = os.path.join(LOCAL_CACHE_DIR, "downloaded.manifest")
+_manifest_set: set[str] = set()
+_manifest_loaded = False
 
 
-def _is_pending(filename):
-    return os.path.isfile(os.path.join(LOCAL_PENDING_DIR, filename))
+def _load_manifest():
+    """Load the set of previously-downloaded filenames from disk (once)."""
+    global _manifest_loaded
+    if _manifest_loaded:
+        return
+    try:
+        with open(_MANIFEST_PATH, "r") as f:
+            for line in f:
+                name = line.strip()
+                if name:
+                    _manifest_set.add(name)
+    except FileNotFoundError:
+        pass
+    _manifest_loaded = True
+    log.info("Manifest loaded: %d previously-downloaded file(s)", len(_manifest_set))
 
 
-def _is_rejected(filename):
-    return os.path.isfile(os.path.join(LOCAL_REJECTED_DIR, filename))
+def _mark_downloaded(filename):
+    """Record a filename in the persistent manifest."""
+    if filename in _manifest_set:
+        return
+    _manifest_set.add(filename)
+    try:
+        with open(_MANIFEST_PATH, "a") as f:
+            f.write(filename + "\n")
+    except OSError as exc:
+        log.warning("Could not write manifest: %s", exc)
+
+
+def _is_already_downloaded(filename):
+    """Return True if we have already downloaded this file before."""
+    _load_manifest()
+    return (
+        filename in _manifest_set
+        or os.path.isfile(os.path.join(LOCAL_CACHE_DIR, filename))
+        or os.path.isfile(os.path.join(LOCAL_PENDING_DIR, filename))
+        or os.path.isfile(os.path.join(LOCAL_REJECTED_DIR, filename))
+    )
 
 
 # ── Upload helper ──────────────────────────────────────────────────────────
@@ -268,6 +302,17 @@ def _upload_file(filepath, filename, speed_tracker):
 def _worker():
     os.makedirs(LOCAL_CACHE_DIR, exist_ok=True)
     os.makedirs(LOCAL_PENDING_DIR, exist_ok=True)
+    os.makedirs(LOCAL_REJECTED_DIR, exist_ok=True)
+
+    # Backfill manifest with any pre-existing files on disk
+    _load_manifest()
+    for d in (LOCAL_CACHE_DIR, LOCAL_PENDING_DIR, LOCAL_REJECTED_DIR):
+        try:
+            for fn in os.listdir(d):
+                if fn.endswith(".hoot"):
+                    _mark_downloaded(fn)
+        except OSError:
+            pass
 
     while True:
         ssh = None
@@ -316,9 +361,7 @@ def _worker():
                 new_files = [
                     (rp, fn, sz)
                     for rp, fn, sz in hoot_files
-                    if not _is_cached(fn)
-                    and not _is_pending(fn)
-                    and not _is_rejected(fn)
+                    if not _is_already_downloaded(fn)
                 ]
                 # Only transfer files that aren't actively being written to
                 new_files = _filter_stable_files(sftp, new_files)
@@ -419,6 +462,7 @@ def _do_transfer(sftp, new_files):
             continue
 
         downloaded.append((tmp_path, filename, remote_path))
+        _mark_downloaded(filename)
         _set(files_completed=file_num)
 
     # ── Queue cloud uploads for the background uploader thread ──
