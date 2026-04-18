@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Robot Telemetry Service — Slap Shot (FRC 4607)
+Robot Telemetry Service — Power Play (FRC 4607)
 
 Always-running service that watches input-logs/ for new hoot files,
 converts them to wpilog, runs all metric groups, and writes results
@@ -24,8 +24,15 @@ import importlib.util
 import signal
 import threading
 import logging
+import time
+import warnings
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+
+# Suppress noisy numpy warnings from correlation computations on constant data
+warnings.filterwarnings("ignore", category=RuntimeWarning, module=r"numpy\.lib\._function_base_impl")
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
@@ -123,7 +130,7 @@ def convert_hoot(hoot_path: str) -> Optional[str]:
     if os.path.exists(out_path):
         return out_path
     result = subprocess.run(
-        [OWLET_BIN, hoot_path, out_path, "-f", "wpilog", "--unlicensed"],
+        [OWLET_BIN, hoot_path, out_path, "-f", "wpilog"],
         capture_output=True,
         text=True,
     )
@@ -157,23 +164,33 @@ def _process_hoot_directory(hoot_dir: str, groups: List[GroupInfo]) -> int:
     if not hoot_files:
         return 0
 
-    log.info("Processing directory: %s (%d hoot files)", dirname, len(hoot_files))
+    log.info("[CONVERT] %s — %d hoot file(s) to convert", dirname, len(hoot_files))
 
     wpilog_paths: List[str] = []
     all_ok = True
 
-    for hoot in hoot_files:
+    for i, hoot in enumerate(hoot_files, 1):
+        hoot_name = os.path.basename(hoot)
+        t0 = time.monotonic()
         out = convert_hoot(hoot)
+        elapsed = time.monotonic() - t0
         if out:
-            log.info("  ✓ Converted %s", os.path.basename(hoot))
+            size_mb = os.path.getsize(out) / (1024 * 1024)
+            log.info("  [%d/%d] ✓ %s → %.1f MB (%.1fs)",
+                     i, len(hoot_files), hoot_name, size_mb, elapsed)
             wpilog_paths.append(out)
         else:
+            log.error("  [%d/%d] ✗ %s — conversion failed (%.1fs)",
+                      i, len(hoot_files), hoot_name, elapsed)
             all_ok = False
 
     # Run metrics on the freshly-converted files
     total_metrics = 0
-    for wpilog_path in wpilog_paths:
-        total_metrics += analyze_log(wpilog_path, groups)
+    for i, wpilog_path in enumerate(wpilog_paths, 1):
+        wname = os.path.basename(wpilog_path)
+        log.info("[ANALYZE] [%d/%d] %s", i, len(wpilog_paths), wname)
+        n = analyze_log(wpilog_path, groups)
+        total_metrics += n
 
     # Archive originals if every conversion succeeded
     if all_ok:
@@ -288,7 +305,9 @@ def analyze_log(path: str, groups: List[GroupInfo]) -> int:
     if pg_done and influx_done:
         return 0
 
-    log.info("Analyzing %s ...", filename)
+    t0 = time.monotonic()
+    size_mb = os.path.getsize(path) / (1024 * 1024)
+    log.info("  Analyzing %s (%.1f MB) ...", filename, size_mb)
 
     with open(path, "r") as f:
         mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
@@ -378,7 +397,8 @@ def analyze_log(path: str, groups: List[GroupInfo]) -> int:
         sess.add_all(rows)
         sess.commit()
 
-    log.info("  ✓ %d metrics written to DB", len(rows))
+    elapsed = time.monotonic() - t0
+    log.info("  ✓ %d metrics written to DB (%.1fs)", len(rows), elapsed)
     return len(rows)
 
 
@@ -523,7 +543,8 @@ def initial_scan(groups: List[GroupInfo]):
 
         if pending:
             log.info("Initial scan: %d hoot directories to process", len(pending))
-            for hoot_dir in pending:
+            for i, hoot_dir in enumerate(pending, 1):
+                log.info("[QUEUE] [%d/%d] %s", i, len(pending), os.path.basename(hoot_dir))
                 process_hoot_directory(hoot_dir, groups)
             # Clean up empty parent directories left after hoot processing
             for dirpath, dirnames, filenames in os.walk(INPUT_DIR, topdown=False):
@@ -539,7 +560,8 @@ def initial_scan(groups: List[GroupInfo]):
     if logs:
         log.info("Initial scan: checking %d wpilog files for unrun metrics", len(logs))
         total = 0
-        for logfile in logs:
+        for i, logfile in enumerate(logs, 1):
+            log.info("  [%d/%d] %s", i, len(logs), logfile)
             total += analyze_log(os.path.join(LOGS_DIR, logfile), groups)
         if total:
             log.info("Initial scan complete: %d metrics written", total)
@@ -550,7 +572,7 @@ def initial_scan(groups: List[GroupInfo]):
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main():
     log.info("=" * 60)
-    log.info("Robot Telemetry Service — Slap Shot (FRC 4607)")
+    log.info("Robot Telemetry Service — Power Play (FRC 4607)")
     log.info("=" * 60)
 
     if not os.path.isfile(OWLET_BIN):
@@ -571,6 +593,7 @@ def main():
 
     # Process anything already pending
     initial_scan(groups)
+    log.info("Ready — watching for new files")
 
     # Graceful shutdown
     shutdown = threading.Event()
