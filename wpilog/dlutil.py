@@ -33,6 +33,8 @@ def WPILogToDataFrame(log: DataLogReader, pivot: bool = False) -> pd.DataFrame:
             startRecord: StartRecordData = record.getStartData()
             startRecords[startRecord.entry] = startRecord
         if not record.isControl():
+            if record.entry not in startRecords:
+                continue
             startRecord = startRecords[record.entry]
             rows.append(
                 (
