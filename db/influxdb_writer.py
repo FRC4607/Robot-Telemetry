@@ -13,8 +13,10 @@ Data model:
 
 import os
 import re
+import struct
 import logging
 import datetime
+import mmap
 from typing import Optional, Set
 
 import pandas as pd
@@ -22,6 +24,7 @@ from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
 from keys import INFLUX_TOKEN as _DEFAULT_TOKEN
+from wpilog.datalog import DataLogReader, StartRecordData, WPILogEntryToType
 
 log = logging.getLogger("telemetry")
 
@@ -31,7 +34,7 @@ INFLUX_TOKEN = os.environ.get("INFLUX_TOKEN", _DEFAULT_TOKEN)
 INFLUX_ORG = os.environ.get("INFLUX_ORG", "frc4607")
 INFLUX_BUCKET = os.environ.get("INFLUX_BUCKET", "robot-telemetry")
 
-BATCH_SIZE = 5000
+BATCH_SIZE = 10_000
 
 # Parse Phoenix6 signal keys: "Phoenix6/TalonFX-1/StatorCurrent"
 _KEY_PATTERN = re.compile(r"^Phoenix6/(\w+)-(\d+)/(.+)$")
@@ -85,6 +88,126 @@ def is_file_uploaded(filename: str) -> bool:
 
 
 # ── Writing ────────────────────────────────────────────────────────────────────
+
+def _escape_tag(s: str) -> str:
+    """Escape special characters in InfluxDB line protocol tag values."""
+    return s.replace("\\", "\\\\").replace(" ", "\\ ").replace(",", "\\,").replace("=", "\\=")
+
+
+def _parse_key(key: str):
+    """Parse a wpilog key into (device_type, device_id, signal)."""
+    m = _KEY_PATTERN.match(key)
+    if m:
+        return m.group(1), m.group(2), m.group(3)
+    return "other", "0", key
+
+
+def stream_raw_data(
+    wpilog_path: str,
+    filename: str,
+    base_time: Optional[datetime.datetime] = None,
+    event_key: str = "off-field",
+    match_info: str = "off-field",
+) -> int:
+    """
+    Stream raw numeric telemetry data directly from a wpilog file to InfluxDB.
+
+    Instead of building a full DataFrame in RAM, this reads records one at a time
+    from the wpilog, converts numeric values to line-protocol strings, and writes
+    them in batches.  Peak memory usage is O(BATCH_SIZE) instead of O(file_size).
+
+    Returns number of points written, or 0 on failure.
+    """
+    _ensure_cache()
+    if is_file_uploaded(filename):
+        return 0
+
+    base_us = int(base_time.timestamp() * 1_000_000) if base_time else 0
+
+    # Pre-escape constant tag values once
+    e_filename = _escape_tag(filename)
+    e_event = _escape_tag(event_key)
+    e_match = _escape_tag(match_info)
+
+    total = 0
+    lines = []
+
+    try:
+        with open(wpilog_path, "r") as f:
+            mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+
+        reader = DataLogReader(mm)
+        start_records = {}
+
+        with _get_client() as client:
+            write_api = client.write_api(write_options=SYNCHRONOUS)
+
+            for record in reader:
+                if record.isStart():
+                    sd = record.getStartData()
+                    start_records[sd.entry] = sd
+                    continue
+                if record.isControl():
+                    continue
+                if record.entry not in start_records:
+                    continue
+
+                sr = start_records[record.entry]
+                # Only write numeric types
+                if sr.type not in ("double", "int64"):
+                    continue
+
+                try:
+                    if sr.type == "double":
+                        val = record.getDouble()
+                    else:
+                        val = float(record.getInteger())
+                except (TypeError, struct.error):
+                    continue
+
+                device_type, device_id, signal_name = _parse_key(sr.name)
+                abs_ts = base_us + record.timestamp
+
+                # Build line protocol string directly (much faster than Point objects)
+                line = (
+                    f"robot_telemetry,"
+                    f"file={e_filename},"
+                    f"device_type={_escape_tag(device_type)},"
+                    f"device_id={_escape_tag(device_id)},"
+                    f"signal={_escape_tag(signal_name)},"
+                    f"event_key={e_event},"
+                    f"match_info={e_match}"
+                    f" value={val} {abs_ts}000"
+                )
+                lines.append(line)
+                total += 1
+
+                if len(lines) >= BATCH_SIZE:
+                    write_api.write(bucket=INFLUX_BUCKET, record="\n".join(lines))
+                    lines = []
+
+            # Flush remainder
+            if lines:
+                write_api.write(bucket=INFLUX_BUCKET, record="\n".join(lines))
+
+            # Record that this file is done
+            tracking = (
+                Point("_upload_tracking")
+                .tag("file", filename)
+                .field("points", total)
+                .field("uploaded", True)
+            )
+            write_api.write(bucket=INFLUX_BUCKET, record=tracking)
+
+        mm.close()
+        _uploaded_files.add(filename)
+        log.info("  InfluxDB: ✓ %d points streamed", total)
+        return total
+
+    except Exception as e:
+        log.error("InfluxDB stream write failed for %s: %s", filename, e)
+        return 0
+
 
 def write_raw_data(
     df: pd.DataFrame,

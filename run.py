@@ -29,6 +29,7 @@ import warnings
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
+import concurrent.futures
 import numpy as np
 
 # Suppress noisy numpy warnings from correlation computations on constant data
@@ -48,6 +49,12 @@ GROUPS_DIR = os.path.join(BASE_DIR, "groups")
 
 # How long to wait after the last file event before processing a directory (seconds).
 SETTLE_SECONDS = 5
+
+# Number of worker threads for parallel metric group evaluation.
+MAX_METRIC_WORKERS = min(os.cpu_count() or 4, 12)
+
+# Number of worker threads for processing multiple wpilog files concurrently.
+MAX_FILE_WORKERS = 3
 
 from keys import DB_PASSWORD  # noqa: E402 (before sys.path manipulation)
 from urllib.parse import quote_plus  # noqa: E402
@@ -81,7 +88,7 @@ from wpilog.datalog import DataLogReader       # noqa: E402
 from wpilog.dlutil import WPILogToDataFrame    # noqa: E402
 from db.metric import Metric                   # noqa: E402
 from db.engine import engine                   # noqa: E402
-from db.influxdb_writer import is_file_uploaded, write_raw_data  # noqa: E402
+from db.influxdb_writer import is_file_uploaded, write_raw_data, stream_raw_data  # noqa: E402
 from sqlalchemy.orm import Session             # noqa: E402
 from sqlalchemy import Select                  # noqa: E402
 
@@ -280,7 +287,13 @@ def extract_fms_info(df) -> Tuple[str, str]:
 
 
 def analyze_log(path: str, groups: List[GroupInfo]) -> int:
-    """Run all metric groups on a single .wpilog file and write results to the DB."""
+    """Run all metric groups on a single .wpilog file and write results to the DB.
+
+    Pipeline:
+      1. Stream raw data directly to InfluxDB (low memory — no DataFrame).
+      2. Build DataFrame only if metrics need computing.
+      3. Evaluate metric groups in parallel using a thread pool.
+    """
     filename = os.path.basename(path)
 
     # Fast-path: check if all groups are already computed for this filename
@@ -309,55 +322,92 @@ def analyze_log(path: str, groups: List[GroupInfo]) -> int:
     size_mb = os.path.getsize(path) / (1024 * 1024)
     log.info("  Analyzing %s (%.1f MB) ...", filename, size_mb)
 
+    # ── Phase 1: Stream raw data to InfluxDB (no DataFrame needed) ────────
+    info = get_info_from_log_name(filename)
+    if not influx_done:
+        t_influx = time.monotonic()
+        n_pts = stream_raw_data(
+            path, filename,
+            base_time=info["dt"],
+            event_key=info.get("event") or "off-field",
+            match_info=info.get("matchInfo") or "off-field",
+        )
+        log.info("  InfluxDB stream: %d points (%.1fs)", n_pts, time.monotonic() - t_influx)
+
+    # If all stoplight metrics are already in PostgreSQL, we're done
+    if pg_done:
+        elapsed = time.monotonic() - t0
+        log.info("  ✓ InfluxDB only — metrics already computed (%.1fs)", elapsed)
+        return 0
+
+    # ── Phase 2: Build DataFrame for metric computation ───────────────────
+    t_df = time.monotonic()
     with open(path, "r") as f:
         mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
         file_hash = hashlib.md5(mm).digest()
         reader = DataLogReader(mm)
         df = WPILogToDataFrame(reader)
-
-    info = get_info_from_log_name(filename)
+    log.info("  DataFrame built: %d rows (%.1fs)", len(df), time.monotonic() - t_df)
 
     # Extract FMS match info from the log data itself
     event_key, match_info = extract_fms_info(df)
     info["event"] = event_key
     info["matchInfo"] = match_info
 
-    # Write raw time-series data to InfluxDB (skips automatically if already done)
-    if not influx_done:
-        write_raw_data(df, filename, base_time=info["dt"],
-                       event_key=event_key, match_info=match_info)
-
-    # If all stoplight metrics are already in PostgreSQL, we're done
-    if pg_done:
-        return 0
-
-    results: Dict[str, GroupInfo] = {}
-
+    # ── Phase 3: Evaluate metric groups in parallel ───────────────────────
+    # Build the list of groups that actually need computing
+    groups_to_run = []
     for group in groups:
-        group.metrics = {}
-
-        # Recompute group hash so hot-reloaded edits are picked up
         with open(group.module.__file__, "rb") as f:
             group.hash = hashlib.file_digest(f, "md5").digest()
-
-        # Skip if already computed for this (file, group-version) pair
         with Session(engine) as sess:
             prev = sess.scalar(
                 Select(Metric.id)
                 .where(Metric.file_hash == file_hash)
                 .where(Metric.metric_hash == group.hash)
             )
-        if prev is not None:
-            continue
+        if prev is None:
+            groups_to_run.append(group)
 
+    if not groups_to_run:
+        log.info("  All groups already computed for %s", filename)
+        return 0
+
+    def _run_group(group: GroupInfo) -> Tuple[str, GroupInfo]:
+        """Evaluate all metrics in a single group. Thread-safe (read-only on df)."""
         metric_defs = group.module.defineMetrics()
+        metrics = {}
         for name, fn in metric_defs.items():
             severity, result = fn(df)
-            group.metrics[name] = (severity, result)
-        results[group.name] = group
+            metrics[name] = (severity, result)
+        return group.name, GroupInfo(
+            name=group.name, hash=group.hash, module=group.module, metrics=metrics
+        )
+
+    t_metrics = time.monotonic()
+    results: Dict[str, GroupInfo] = {}
+
+    if len(groups_to_run) == 1:
+        # No need for thread pool overhead with a single group
+        gname, ginfo = _run_group(groups_to_run[0])
+        results[gname] = ginfo
+    else:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_METRIC_WORKERS) as pool:
+            futures = {pool.submit(_run_group, g): g for g in groups_to_run}
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    gname, ginfo = future.result()
+                    results[gname] = ginfo
+                except Exception:
+                    failed_group = futures[future]
+                    log.error("Metric group %s failed", failed_group.name, exc_info=True)
+
+    log.info("  Metrics: %d groups evaluated (%.1fs)", len(results), time.monotonic() - t_metrics)
+
+    # Free DataFrame memory before DB writes
+    del df
 
     if not results:
-        log.info("  All groups already computed for %s", filename)
         return 0
 
     # Write JSON backup
@@ -560,9 +610,16 @@ def initial_scan(groups: List[GroupInfo]):
     if logs:
         log.info("Initial scan: checking %d wpilog files for unrun metrics", len(logs))
         total = 0
-        for i, logfile in enumerate(logs, 1):
-            log.info("  [%d/%d] %s", i, len(logs), logfile)
-            total += analyze_log(os.path.join(LOGS_DIR, logfile), groups)
+
+        def _analyze_one(args):
+            idx, logfile = args
+            log.info("  [%d/%d] %s", idx, len(logs), logfile)
+            return analyze_log(os.path.join(LOGS_DIR, logfile), groups)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_FILE_WORKERS) as pool:
+            results = pool.map(_analyze_one, enumerate(logs, 1))
+            total = sum(results)
+
         if total:
             log.info("Initial scan complete: %d metrics written", total)
         else:
