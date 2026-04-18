@@ -37,7 +37,7 @@ def defineMetrics() -> Dict[str, Callable[[pd.DataFrame], Tuple[int, str]]]:
         "Intake Arm Avg Current": ProcessAvgCurrent,
         "Intake Arm Max Velocity": ProcessMaxVelocity,
         "Intake Arm Position Range": ProcessPositionRange,
-        "Intake Arm Encoder Alignment": ProcessEncoderAlignment,
+        "Intake Arm Position Error": ProcessPositionError,
     }
 
 
@@ -94,6 +94,27 @@ def ProcessPositionRange(df: pd.DataFrame) -> Tuple[int, str]:
     min_pos = float(data.min())
     max_pos = float(data.max())
     return 0, f"{min_pos:.3f} to {max_pos:.3f} rot"
+
+
+def ProcessPositionError(df: pd.DataFrame) -> Tuple[int, str]:
+    """Mean |ClosedLoopError| when the intake arm is actively positioning."""
+    err = _get_numeric(df, talon_key(MOTOR_ID, "ClosedLoopError"))
+    ref = _get_numeric(df, talon_key(MOTOR_ID, "ClosedLoopReference"))
+    if err.empty or ref.empty:
+        return -1, "no data (needs licensed owlet)"
+    combined = pd.DataFrame({"err": err, "ref": ref}).interpolate(limit_direction="both").dropna()
+    ref_diff = combined["ref"].diff().abs()
+    active = combined[ref_diff > 0.0001]
+    if len(active) < 10:
+        active = combined[combined["err"].abs() > 0.0001]
+    if len(active) < 10:
+        return 0, "no active positioning detected"
+    mean_err = float(active["err"].abs().mean())
+    peak_err = float(active["err"].abs().max())
+    mean_deg = mean_err * 360.0
+    peak_deg = peak_err * 360.0
+    stoplight = 2 if mean_deg > 5.0 else (1 if mean_deg > 2.0 else 0)
+    return stoplight, f"avg {mean_deg:.2f} deg, peak {peak_deg:.1f} deg"
 
 
 def ProcessEncoderAlignment(df: pd.DataFrame) -> Tuple[int, str]:

@@ -26,7 +26,6 @@ def _get_numeric(df: pd.DataFrame, key: str) -> pd.Series:
 
 def defineMetrics() -> Dict[str, Callable[[pd.DataFrame], Tuple[int, str]]]:
     return {
-        "Pigeon Yaw Normality": ProcessYawNormality,
         "Pigeon Yaw Drift": ProcessYawDrift,
         "Pigeon Max Angular Velocity": ProcessMaxAngularVelocity,
     }

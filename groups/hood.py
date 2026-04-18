@@ -33,30 +33,27 @@ def _get_numeric(df: pd.DataFrame, key: str) -> pd.Series:
     return s
 
 
-def _try_key(df, motor_id, signal):
-    """Try TalonFX key first, then TalonFXS."""
-    for prefix in ["Phoenix6/TalonFX", "Phoenix6/TalonFXS"]:
-        key = f"{prefix}-{motor_id}/{signal}"
-        data = _get_numeric(df, key)
-        if not data.empty:
-            return data
-    return pd.Series(dtype=float)
-
-
 def defineMetrics() -> Dict[str, Callable[[pd.DataFrame], Tuple[int, str]]]:
     metrics = {}
     for side, (motor_id, max_amp) in HOODS.items():
         metrics[f"{side} Hood Max Current"] = (
             lambda df, d=motor_id, m=max_amp: _max_current(df, d, m)
         )
+        metrics[f"{side} Hood Avg Current"] = (
+            lambda df, d=motor_id: _avg_current(df, d)
+        )
         metrics[f"{side} Hood Position Range"] = (
             lambda df, d=motor_id: _position_range(df, d)
+        )
+        metrics[f"{side} Hood Position Error"] = (
+            lambda df, d=motor_id: _position_error(df, d)
         )
     return metrics
 
 
 def _max_current(df: pd.DataFrame, device_id: int, max_amperage: float) -> Tuple[int, str]:
-    data = _try_key(df, device_id, "StatorCurrent")
+    key = talon_key(device_id, "StatorCurrent")
+    data = _get_numeric(df, key)
     if data.empty:
         return -1, "metric_not_implemented"
     window = min(50, len(data))
@@ -68,10 +65,53 @@ def _max_current(df: pd.DataFrame, device_id: int, max_amperage: float) -> Tuple
     return stoplight, f"{max_val:.1f} A"
 
 
+def _avg_current(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
+    curr_key = talon_key(device_id, "StatorCurrent")
+    volt_key = talon_key(device_id, "MotorVoltage")
+    currents = _get_numeric(df, curr_key)
+    voltages = _get_numeric(df, volt_key)
+    if currents.empty:
+        return -1, "metric_not_implemented"
+    if not voltages.empty:
+        combined = pd.DataFrame({"curr": currents, "volt": voltages}).interpolate(
+            limit_direction="both"
+        )
+        combined = combined[combined["volt"].abs() > 0.5]
+        if combined.empty:
+            return 0, "0.0 A (motor inactive)"
+        avg_val = float(combined["curr"].mean())
+    else:
+        avg_val = float(currents.mean())
+    stoplight = 2 if avg_val > 20 else (1 if avg_val > 10 else 0)
+    return stoplight, f"{avg_val:.1f} A"
+
+
 def _position_range(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
-    data = _try_key(df, device_id, "Position")
+    key = talon_key(device_id, "Position")
+    data = _get_numeric(df, key)
     if data.empty:
         return -1, "metric_not_implemented"
     min_pos = float(data.min())
     max_pos = float(data.max())
     return 0, f"{min_pos:.2f} to {max_pos:.2f} rot"
+
+
+def _position_error(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
+    """Mean |ClosedLoopError| when the hood is actively positioning."""
+    err = _get_numeric(df, talon_key(device_id, "ClosedLoopError"))
+    ref = _get_numeric(df, talon_key(device_id, "ClosedLoopReference"))
+    if err.empty or ref.empty:
+        return -1, "no data (needs licensed owlet)"
+    combined = pd.DataFrame({"err": err, "ref": ref}).interpolate(limit_direction="both").dropna()
+    ref_diff = combined["ref"].diff().abs()
+    active = combined[ref_diff > 0.0001]
+    if len(active) < 10:
+        active = combined[combined["err"].abs() > 0.0001]
+    if len(active) < 10:
+        return 0, "no active positioning detected"
+    mean_err = float(active["err"].abs().mean())
+    peak_err = float(active["err"].abs().max())
+    mean_deg = mean_err * 360.0
+    peak_deg = peak_err * 360.0
+    stoplight = 2 if mean_deg > 5.0 else (1 if mean_deg > 2.0 else 0)
+    return stoplight, f"avg {mean_deg:.2f} deg, peak {peak_deg:.1f} deg"

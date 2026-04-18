@@ -59,8 +59,8 @@ def defineMetrics() -> Dict[str, Callable[[pd.DataFrame], Tuple[int, str]]]:
         metrics[f"{abbrev} Drive Max Velocity"] = (
             lambda df, d=drive_id: _max_velocity(df, d)
         )
-        metrics[f"{abbrev} Encoder Alignment"] = (
-            lambda df, s=steer_id, c=cc_id: _encoder_alignment(df, s, c)
+        metrics[f"{abbrev} Steer Position Error"] = (
+            lambda df, s=steer_id: _steer_position_error(df, s)
         )
     return metrics
 
@@ -146,3 +146,24 @@ def _encoder_alignment(
         return 0, "no meaningful motion"
     stoplight = 2 if corr < 0.5 else (1 if corr < 0.8 else 0)
     return stoplight, f"r={corr:.3f}"
+
+
+def _steer_position_error(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
+    """Mean |ClosedLoopError| for swerve steer positioning."""
+    err = _get_numeric(df, talon_key(device_id, "ClosedLoopError"))
+    ref = _get_numeric(df, talon_key(device_id, "ClosedLoopReference"))
+    if err.empty or ref.empty:
+        return -1, "no data (needs licensed owlet)"
+    combined = pd.DataFrame({"err": err, "ref": ref}).interpolate(limit_direction="both").dropna()
+    ref_diff = combined["ref"].diff().abs()
+    active = combined[ref_diff > 0.0001]
+    if len(active) < 10:
+        active = combined[combined["err"].abs() > 0.0001]
+    if len(active) < 10:
+        return 0, "no active steering detected"
+    mean_err = float(active["err"].abs().mean())
+    peak_err = float(active["err"].abs().max())
+    mean_deg = mean_err * 360.0
+    peak_deg = peak_err * 360.0
+    stoplight = 2 if mean_deg > 3.0 else (1 if mean_deg > 1.0 else 0)
+    return stoplight, f"avg {mean_deg:.2f} deg, peak {peak_deg:.1f} deg"

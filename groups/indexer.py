@@ -30,6 +30,7 @@ def defineMetrics() -> Dict[str, Callable[[pd.DataFrame], Tuple[int, str]]]:
         "Indexer Max Current": ProcessMaxCurrent,
         "Indexer Avg Current": ProcessAvgCurrent,
         "Indexer Max Velocity": ProcessMaxVelocity,
+        "Indexer Velocity Error": ProcessVelocityError,
     }
 
 
@@ -75,3 +76,19 @@ def ProcessMaxVelocity(df: pd.DataFrame) -> Tuple[int, str]:
         return -1, "metric_not_implemented"
     max_val = float(data.abs().max())
     return 0, f"{max_val:.1f} rot/s"
+
+
+def ProcessVelocityError(df: pd.DataFrame) -> Tuple[int, str]:
+    """Mean |ClosedLoopError| when the indexer is actively spinning."""
+    err = _get_numeric(df, talon_key(MOTOR_ID, "ClosedLoopError"))
+    ref = _get_numeric(df, talon_key(MOTOR_ID, "ClosedLoopReference"))
+    if err.empty or ref.empty:
+        return -1, "no data (needs licensed owlet)"
+    combined = pd.DataFrame({"err": err, "ref": ref}).interpolate(limit_direction="both").dropna()
+    active = combined[combined["ref"].abs() > 1.0]
+    if len(active) < 10:
+        return 0, "no active spinning detected"
+    mean_err = float(active["err"].abs().mean())
+    peak_err = float(active["err"].abs().max())
+    stoplight = 2 if mean_err > 5.0 else (1 if mean_err > 2.0 else 0)
+    return stoplight, f"avg {mean_err:.2f} rot/s, peak {peak_err:.1f} rot/s"

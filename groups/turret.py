@@ -63,11 +63,8 @@ def defineMetrics() -> Dict[str, Callable[[pd.DataFrame], Tuple[int, str]]]:
         metrics[f"{side} Turret Position Range"] = (
             lambda df, d=motor_id: _position_range(df, d)
         )
-        metrics[f"{side} Turret Encoder1 Alignment"] = (
-            lambda df, d=motor_id, e=enc1_id: _encoder_alignment(df, d, e)
-        )
-        metrics[f"{side} Turret Encoder2 Alignment"] = (
-            lambda df, d=motor_id, e=enc2_id: _encoder_alignment(df, d, e)
+        metrics[f"{side} Turret Position Error"] = (
+            lambda df, d=motor_id: _position_error(df, d)
         )
     return metrics
 
@@ -125,6 +122,29 @@ def _position_range(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
     max_pos = float(data.max())
     range_deg = (max_pos - min_pos) * 360.0
     return 0, f"{range_deg:.1f} deg range ({min_pos:.3f} to {max_pos:.3f} rot)"
+
+
+def _position_error(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
+    """Mean |ClosedLoopError| when the turret is actively moving."""
+    err = _get_numeric(df, talon_key(device_id, "ClosedLoopError"))
+    ref = _get_numeric(df, talon_key(device_id, "ClosedLoopReference"))
+    if err.empty or ref.empty:
+        return -1, "no data (needs licensed owlet)"
+    combined = pd.DataFrame({"err": err, "ref": ref}).interpolate(limit_direction="both").dropna()
+    # Filter to when reference is changing (turret in motion)
+    ref_diff = combined["ref"].diff().abs()
+    active = combined[ref_diff > 0.0001]  # reference changing
+    if len(active) < 10:
+        # Fall back to all samples where error is nonzero
+        active = combined[combined["err"].abs() > 0.0001]
+    if len(active) < 10:
+        return 0, "no active positioning detected"
+    mean_err = float(active["err"].abs().mean())
+    peak_err = float(active["err"].abs().max())
+    mean_deg = mean_err * 360.0
+    peak_deg = peak_err * 360.0
+    stoplight = 2 if mean_deg > 5.0 else (1 if mean_deg > 2.0 else 0)
+    return stoplight, f"avg {mean_deg:.2f} deg, peak {peak_deg:.1f} deg"
 
 
 def _encoder_alignment(df: pd.DataFrame, motor_id: int, enc_id: int) -> Tuple[int, str]:

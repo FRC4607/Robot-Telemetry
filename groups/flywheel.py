@@ -63,6 +63,9 @@ def defineMetrics() -> Dict[str, Callable[[pd.DataFrame], Tuple[int, str]]]:
         metrics[f"{side} Flywheel Leader-Follower Agreement"] = (
             lambda df, l=leader_id, f=follower_id: _follower_agreement(df, l, f)
         )
+        metrics[f"{side} Flywheel Velocity Error"] = (
+            lambda df, d=leader_id: _velocity_error(df, d)
+        )
     return metrics
 
 
@@ -129,3 +132,19 @@ def _follower_agreement(df: pd.DataFrame, leader_id: int, follower_id: int) -> T
     # Follower is opposed, so expect negative correlation
     stoplight = 2 if abs(corr) < 0.5 else (1 if abs(corr) < 0.8 else 0)
     return stoplight, f"r={corr:.3f} (opposed)"
+
+
+def _velocity_error(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
+    """Mean |ClosedLoopError| when the flywheel is actively spinning."""
+    err = _get_numeric(df, talon_key(device_id, "ClosedLoopError"))
+    ref = _get_numeric(df, talon_key(device_id, "ClosedLoopReference"))
+    if err.empty or ref.empty:
+        return -1, "no data (needs licensed owlet)"
+    combined = pd.DataFrame({"err": err, "ref": ref}).interpolate(limit_direction="both").dropna()
+    active = combined[combined["ref"].abs() > 1.0]  # spinning > 1 rot/s
+    if len(active) < 10:
+        return 0, "no active spinning detected"
+    mean_err = float(active["err"].abs().mean())
+    peak_err = float(active["err"].abs().max())
+    stoplight = 2 if mean_err > 5.0 else (1 if mean_err > 2.0 else 0)
+    return stoplight, f"avg {mean_err:.2f} rot/s, peak {peak_err:.1f} rot/s"
