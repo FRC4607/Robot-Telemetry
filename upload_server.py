@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Robot Telemetry — Log Upload Server
-FRC Team 4607 "Slap Shot"
+FRC Team 4607 "Power Play" — 2026 season (second robot)
 
 Lightweight HTTP server that accepts .hoot file uploads and drops them
 into the input-logs/ directory for the telemetry pipeline to pick up

@@ -1,4 +1,3 @@
-"""
 """Device-to-subsystem mapping for FRC 4607, 2026 (second robot "Power Play").
 CAN bus: "kachow"
 Source: FRC4607/comp-bot2-2026 main branch (rework merged)

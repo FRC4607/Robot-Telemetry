@@ -1,5 +1,5 @@
 """
-Climber metrics for Slap Shot (FRC 4607, 2026).
+Climber metrics for Power Play (FRC 4607, 2026).
 Outer: TalonFX IDs 23 (leader) & 6 (follower, aligned).
 Inner: TalonFX IDs 15 (leader) & 56 (follower, aligned).
 MotionMagicTorqueCurrentFOC, kMaxAmperage=80, kInchesPerRev=0.19864.

@@ -1,5 +1,5 @@
 [Unit]
-Description=Robot Telemetry Upload Server — Slap Shot (FRC 4607)
+Description=Robot Telemetry Upload Server — Power Play (FRC 4607)
 After=network.target
 Wants=robot-telemetry.service
 

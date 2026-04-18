@@ -1,5 +1,5 @@
 [Unit]
-Description=Robot Telemetry Service — Slap Shot (FRC 4607)
+Description=Robot Telemetry Service — Power Play (FRC 4607)
 After=network.target postgresql.service
 Wants=postgresql.service
 
