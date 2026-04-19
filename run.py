@@ -173,31 +173,44 @@ def _process_hoot_directory(hoot_dir: str, groups: List[GroupInfo]) -> int:
 
     log.info("[CONVERT] %s — %d hoot file(s) to convert", dirname, len(hoot_files))
 
-    wpilog_paths: List[str] = []
+    converted: List[str] = []
     all_ok = True
-
-    for i, hoot in enumerate(hoot_files, 1):
-        hoot_name = os.path.basename(hoot)
-        t0 = time.monotonic()
-        out = convert_hoot(hoot)
-        elapsed = time.monotonic() - t0
-        if out:
-            size_mb = os.path.getsize(out) / (1024 * 1024)
-            log.info("  [%d/%d] ✓ %s → %.1f MB (%.1fs)",
-                     i, len(hoot_files), hoot_name, size_mb, elapsed)
-            wpilog_paths.append(out)
-        else:
-            log.error("  [%d/%d] ✗ %s — conversion failed (%.1fs)",
-                      i, len(hoot_files), hoot_name, elapsed)
-            all_ok = False
-
-    # Run metrics on the freshly-converted files
     total_metrics = 0
-    for i, wpilog_path in enumerate(wpilog_paths, 1):
-        wname = os.path.basename(wpilog_path)
-        log.info("[ANALYZE] [%d/%d] %s", i, len(wpilog_paths), wname)
-        n = analyze_log(wpilog_path, groups)
-        total_metrics += n
+
+    # Pipeline: convert and analyze concurrently.
+    # A thread pool runs analysis as soon as each conversion finishes, while
+    # the main thread continues converting the next hoot file.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_FILE_WORKERS) as pool:
+        analysis_futures: List[concurrent.futures.Future] = []
+
+        for i, hoot in enumerate(hoot_files, 1):
+            hoot_name = os.path.basename(hoot)
+            t0 = time.monotonic()
+            out = convert_hoot(hoot)
+            elapsed = time.monotonic() - t0
+            if out:
+                size_mb = os.path.getsize(out) / (1024 * 1024)
+                log.info("  [%d/%d] ✓ %s → %.1f MB (%.1fs)",
+                         i, len(hoot_files), hoot_name, size_mb, elapsed)
+                converted.append(out)
+
+                # Submit analysis immediately — runs while next hoot converts
+                wname = os.path.basename(out)
+                idx = len(converted)
+                future = pool.submit(analyze_log, out, groups)
+                analysis_futures.append((idx, wname, future))
+            else:
+                log.error("  [%d/%d] ✗ %s — conversion failed (%.1fs)",
+                          i, len(hoot_files), hoot_name, elapsed)
+                all_ok = False
+
+        # Wait for all analysis tasks to finish
+        for idx, wname, future in analysis_futures:
+            try:
+                n = future.result()
+                total_metrics += n
+            except Exception:
+                log.error("Analysis failed for %s", wname, exc_info=True)
 
     # Archive originals if every conversion succeeded
     if all_ok:
@@ -210,7 +223,8 @@ def _process_hoot_directory(hoot_dir: str, groups: List[GroupInfo]) -> int:
             else:
                 os.remove(hoot)
         try:
-            os.rmdir(hoot_dir)
+            if os.path.normpath(hoot_dir) != os.path.normpath(INPUT_DIR):
+                os.rmdir(hoot_dir)
         except OSError:
             pass  # dir not empty (unexpected extra files) — leave it
 
@@ -487,6 +501,34 @@ class HootDirectoryHandler(FileSystemEventHandler):
             timer.start()
             self._timers[file_path] = timer
 
+    def _schedule_hoot(self, file_path: str):
+        """(Re-)schedule processing of a hoot file dropped directly in INPUT_DIR.
+
+        Uses INPUT_DIR as the key so that multiple hoots arriving together
+        are batched into a single process_hoot_directory() call after they
+        all settle.
+        """
+        key = INPUT_DIR + ":hoots"
+        with self._lock:
+            if key in self._timers:
+                self._timers[key].cancel()
+            timer = threading.Timer(SETTLE_SECONDS, self._process_loose_hoots)
+            timer.daemon = True
+            timer.start()
+            self._timers[key] = timer
+
+    def _process_loose_hoots(self):
+        key = INPUT_DIR + ":hoots"
+        with self._lock:
+            self._timers.pop(key, None)
+
+        try:
+            total = process_hoot_directory(INPUT_DIR, self.groups)
+            if total:
+                log.info("Loose hoot files complete: %d metrics written", total)
+        except Exception:
+            log.error("Error processing loose hoot files in input-logs/", exc_info=True)
+
     def _process_wpilog(self, file_path: str):
         with self._lock:
             self._timers.pop(file_path, None)
@@ -549,9 +591,12 @@ class HootDirectoryHandler(FileSystemEventHandler):
         src = event.src_path
         rel = os.path.relpath(src, INPUT_DIR)
 
-        # Handle wpilog files dropped directly in INPUT_DIR
+        # Handle wpilog/hoot files dropped directly in INPUT_DIR
         if os.sep not in rel and src.endswith(".wpilog"):
             self._schedule_wpilog(src)
+            return
+        if os.sep not in rel and src.endswith(".hoot"):
+            self._schedule_hoot(src)
             return
 
         top_dir = rel.split(os.sep)[0]

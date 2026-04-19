@@ -17,6 +17,7 @@ import struct
 import logging
 import datetime
 import mmap
+import concurrent.futures
 from typing import Optional, Set
 
 import pandas as pd
@@ -34,7 +35,8 @@ INFLUX_TOKEN = os.environ.get("INFLUX_TOKEN", _DEFAULT_TOKEN)
 INFLUX_ORG = os.environ.get("INFLUX_ORG", "frc4607")
 INFLUX_BUCKET = os.environ.get("INFLUX_BUCKET", "robot-telemetry")
 
-BATCH_SIZE = 10_000
+BATCH_SIZE = 50_000
+WRITE_WORKERS = 4
 
 # Parse Phoenix6 signal keys: "Phoenix6/TalonFX-1/StatorCurrent"
 _KEY_PATTERN = re.compile(r"^Phoenix6/(\w+)-(\d+)/(.+)$")
@@ -44,7 +46,8 @@ _uploaded_files: Optional[Set[str]] = None
 
 
 def _get_client() -> InfluxDBClient:
-    return InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
+    return InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG,
+                          enable_gzip=True)
 
 
 # ── Deduplication ──────────────────────────────────────────────────────────────
@@ -116,6 +119,9 @@ def stream_raw_data(
     from the wpilog, converts numeric values to line-protocol strings, and writes
     them in batches.  Peak memory usage is O(BATCH_SIZE) instead of O(file_size).
 
+    Uses gzip compression, large batches, cached tag prefixes, and a thread pool
+    for overlapped writes so parsing never blocks on InfluxDB I/O.
+
     Returns number of points written, or 0 on failure.
     """
     _ensure_cache()
@@ -129,18 +135,28 @@ def stream_raw_data(
     e_event = _escape_tag(event_key)
     e_match = _escape_tag(match_info)
 
+    # Cache: entry_id → pre-built tag prefix string (everything before " value=")
+    tag_cache: dict[int, str] = {}
+
     total = 0
-    lines = []
+    lines: list[str] = []
 
     try:
         with open(wpilog_path, "r") as f:
             mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
         reader = DataLogReader(mm)
-        start_records = {}
+        start_records: dict[int, StartRecordData] = {}
 
         with _get_client() as client:
             write_api = client.write_api(write_options=SYNCHRONOUS)
+
+            # Thread pool for overlapped batch writes
+            pool = concurrent.futures.ThreadPoolExecutor(max_workers=WRITE_WORKERS)
+            futures: list[concurrent.futures.Future] = []
+
+            def _flush(batch: str):
+                write_api.write(bucket=INFLUX_BUCKET, record=batch)
 
             for record in reader:
                 if record.isStart():
@@ -165,30 +181,51 @@ def stream_raw_data(
                 except (TypeError, struct.error):
                     continue
 
-                device_type, device_id, signal_name = _parse_key(sr.name)
-                abs_ts = base_us + record.timestamp
+                # Cached tag prefix per entry ID
+                prefix = tag_cache.get(record.entry)
+                if prefix is None:
+                    device_type, device_id, signal_name = _parse_key(sr.name)
+                    prefix = (
+                        f"robot_telemetry,"
+                        f"file={e_filename},"
+                        f"device_type={_escape_tag(device_type)},"
+                        f"device_id={_escape_tag(device_id)},"
+                        f"signal={_escape_tag(signal_name)},"
+                        f"event_key={e_event},"
+                        f"match_info={e_match}"
+                    )
+                    tag_cache[record.entry] = prefix
 
-                # Build line protocol string directly (much faster than Point objects)
-                line = (
-                    f"robot_telemetry,"
-                    f"file={e_filename},"
-                    f"device_type={_escape_tag(device_type)},"
-                    f"device_id={_escape_tag(device_id)},"
-                    f"signal={_escape_tag(signal_name)},"
-                    f"event_key={e_event},"
-                    f"match_info={e_match}"
-                    f" value={val} {abs_ts}000"
-                )
-                lines.append(line)
+                abs_ts = base_us + record.timestamp
+                lines.append(f"{prefix} value={val} {abs_ts}000")
                 total += 1
 
                 if len(lines) >= BATCH_SIZE:
-                    write_api.write(bucket=INFLUX_BUCKET, record="\n".join(lines))
+                    batch = "\n".join(lines)
+                    futures.append(pool.submit(_flush, batch))
                     lines = []
+
+                    if total % 1_000_000 == 0:
+                        log.info("    InfluxDB: %dM points streamed ...", total // 1_000_000)
+
+                    # Don't let too many futures pile up (back-pressure)
+                    if len(futures) >= WRITE_WORKERS * 2:
+                        done, _ = concurrent.futures.wait(
+                            futures, return_when=concurrent.futures.FIRST_COMPLETED
+                        )
+                        for fut in done:
+                            fut.result()  # raise on error
+                            futures.remove(fut)
 
             # Flush remainder
             if lines:
-                write_api.write(bucket=INFLUX_BUCKET, record="\n".join(lines))
+                futures.append(pool.submit(_flush, "\n".join(lines)))
+
+            # Wait for all writes to finish
+            for fut in concurrent.futures.as_completed(futures):
+                fut.result()
+
+            pool.shutdown(wait=False)
 
             # Record that this file is done
             tracking = (
