@@ -445,21 +445,39 @@ ORDER BY stoplight DESC, metric;''',
     # Template variables
     templating = [
         pg_variable("event_key", "Event",
-                     "SELECT DISTINCT event_key FROM metrics ORDER BY event_key;"),
+                     "SELECT DISTINCT event_key FROM metrics WHERE file_name NOT LIKE '%_rio_%' ORDER BY event_key;"),
         pg_variable("match_info", "Match",
-                     "SELECT DISTINCT match_info FROM metrics WHERE event_key = '${event_key}' ORDER BY match_info;"),
-        pg_variable("file_name", "Log File",
-                     "SELECT DISTINCT file_name FROM metrics WHERE event_key = '${event_key}' AND match_info = '${match_info}' ORDER BY file_name DESC;"),
+                     "SELECT DISTINCT match_info FROM metrics WHERE event_key = '${event_key}' AND file_name NOT LIKE '%_rio_%' ORDER BY match_info;"),
+        {
+            "name": "file_name",
+            "label": "Log File",
+            "type": "query",
+            "datasource": PG_DS,
+            "query": """SELECT file_name
+FROM metrics
+WHERE file_name NOT LIKE '%_rio_%'
+GROUP BY file_name
+ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC
+LIMIT 1;""",
+            "refresh": 2,
+            "multi": False,
+            "includeAll": False,
+            "sort": 0,
+        },
     ]
 
-    return wrap_dashboard(
+    dash = wrap_dashboard(
         "Match Stoplight",
         "match-stoplight",
         panels,
         templating,
-        description="Stoplight health metrics for a specific log file. Select event → match → file.",
+        description="Stoplight health metrics auto-focused on the newest log file.",
         tags=["auto-generated", "stoplight", "match"],
     )
+
+    # Auto-refresh keeps the TV dashboard pinned to newly uploaded logs.
+    dash["dashboard"]["refresh"] = "10s"
+    return dash
 
 
 # ═══════════════════════════════════════════════════════════════════════════

@@ -3,7 +3,7 @@
     "id": null,
     "uid": "match-stoplight",
     "title": "Match Stoplight",
-    "description": "Stoplight health metrics for a specific log file. Select event \u2192 match \u2192 file.",
+    "description": "Stoplight health metrics auto-focused on the newest log file.",
     "tags": [
       "auto-generated",
       "stoplight",
@@ -1288,7 +1288,7 @@
             "type": "grafana-postgresql-datasource",
             "uid": "ffd8jczdyabr4c"
           },
-          "query": "SELECT DISTINCT event_key FROM metrics ORDER BY event_key;",
+          "query": "SELECT DISTINCT event_key FROM metrics WHERE file_name NOT LIKE '%_rio_%' ORDER BY event_key;",
           "refresh": 1,
           "multi": false,
           "includeAll": false,
@@ -1302,7 +1302,7 @@
             "type": "grafana-postgresql-datasource",
             "uid": "ffd8jczdyabr4c"
           },
-          "query": "SELECT DISTINCT match_info FROM metrics WHERE event_key = '${event_key}' ORDER BY match_info;",
+          "query": "SELECT DISTINCT match_info FROM metrics WHERE event_key = '${event_key}' AND file_name NOT LIKE '%_rio_%' ORDER BY match_info;",
           "refresh": 1,
           "multi": false,
           "includeAll": false,
@@ -1316,11 +1316,11 @@
             "type": "grafana-postgresql-datasource",
             "uid": "ffd8jczdyabr4c"
           },
-          "query": "SELECT DISTINCT file_name FROM metrics WHERE event_key = '${event_key}' AND match_info = '${match_info}' ORDER BY file_name DESC;",
-          "refresh": 1,
+          "query": "SELECT file_name\nFROM metrics\nWHERE file_name NOT LIKE '%_rio_%'\nGROUP BY file_name\nORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC\nLIMIT 1;",
+          "refresh": 2,
           "multi": false,
           "includeAll": false,
-          "sort": 1
+          "sort": 0
         }
       ]
     },
@@ -1328,7 +1328,7 @@
       "from": "now-90d",
       "to": "now"
     },
-    "refresh": ""
+    "refresh": "10s"
   },
   "overwrite": true
 }

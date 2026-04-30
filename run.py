@@ -332,6 +332,11 @@ def analyze_log(path: str, groups: List[GroupInfo]) -> int:
     """
     filename = os.path.basename(path)
 
+    # Skip driverstation rio-side logs; they don't contain useful device metrics.
+    if "_rio_" in filename:
+        log.info("  Skipping %s (rio-only log)", filename)
+        return 0
+
     # Fast-path: check if all groups are already computed for this filename
     # by comparing group hashes.  This avoids parsing large files needlessly.
     current_group_hashes = set()
