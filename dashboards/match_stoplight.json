@@ -1288,11 +1288,11 @@
             "type": "grafana-postgresql-datasource",
             "uid": "ffd8jczdyabr4c"
           },
-          "query": "SELECT DISTINCT event_key FROM metrics WHERE file_name NOT LIKE '%_rio_%' ORDER BY event_key;",
-          "refresh": 1,
+          "query": "SELECT event_key\nFROM metrics\nWHERE file_name NOT LIKE '%_rio_%'\nGROUP BY event_key\nORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC\nLIMIT 1;",
+          "refresh": 2,
           "multi": false,
           "includeAll": false,
-          "sort": 1
+          "sort": 0
         },
         {
           "name": "match_info",
@@ -1302,11 +1302,11 @@
             "type": "grafana-postgresql-datasource",
             "uid": "ffd8jczdyabr4c"
           },
-          "query": "SELECT DISTINCT match_info FROM metrics WHERE event_key = '${event_key}' AND file_name NOT LIKE '%_rio_%' ORDER BY match_info;",
-          "refresh": 1,
+          "query": "SELECT match_info\nFROM metrics\nWHERE event_key = '${event_key}'\n    AND file_name NOT LIKE '%_rio_%'\nGROUP BY match_info\nORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC\nLIMIT 1;",
+          "refresh": 2,
           "multi": false,
           "includeAll": false,
-          "sort": 1
+          "sort": 0
         },
         {
           "name": "file_name",
@@ -1316,7 +1316,7 @@
             "type": "grafana-postgresql-datasource",
             "uid": "ffd8jczdyabr4c"
           },
-          "query": "SELECT file_name\nFROM metrics\nWHERE file_name NOT LIKE '%_rio_%'\nGROUP BY file_name\nORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC\nLIMIT 1;",
+          "query": "SELECT file_name\nFROM metrics\nWHERE event_key = '${event_key}'\n    AND match_info = '${match_info}'\n    AND file_name NOT LIKE '%_rio_%'\nGROUP BY file_name\nORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC\nLIMIT 1;",
           "refresh": 2,
           "multi": false,
           "includeAll": false,

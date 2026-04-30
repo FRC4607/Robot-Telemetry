@@ -444,10 +444,39 @@ ORDER BY stoplight DESC, metric;''',
 
     # Template variables
     templating = [
-        pg_variable("event_key", "Event",
-                     "SELECT DISTINCT event_key FROM metrics WHERE file_name NOT LIKE '%_rio_%' ORDER BY event_key;"),
-        pg_variable("match_info", "Match",
-                     "SELECT DISTINCT match_info FROM metrics WHERE event_key = '${event_key}' AND file_name NOT LIKE '%_rio_%' ORDER BY match_info;"),
+                {
+                        "name": "event_key",
+                        "label": "Event",
+                        "type": "query",
+                        "datasource": PG_DS,
+                        "query": """SELECT event_key
+FROM metrics
+WHERE file_name NOT LIKE '%_rio_%'
+GROUP BY event_key
+ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC
+LIMIT 1;""",
+                        "refresh": 2,
+                        "multi": False,
+                        "includeAll": False,
+                        "sort": 0,
+                },
+                {
+                        "name": "match_info",
+                        "label": "Match",
+                        "type": "query",
+                        "datasource": PG_DS,
+                        "query": """SELECT match_info
+FROM metrics
+WHERE event_key = '${event_key}'
+    AND file_name NOT LIKE '%_rio_%'
+GROUP BY match_info
+ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC
+LIMIT 1;""",
+                        "refresh": 2,
+                        "multi": False,
+                        "includeAll": False,
+                        "sort": 0,
+                },
         {
             "name": "file_name",
             "label": "Log File",
@@ -455,7 +484,9 @@ ORDER BY stoplight DESC, metric;''',
             "datasource": PG_DS,
             "query": """SELECT file_name
 FROM metrics
-WHERE file_name NOT LIKE '%_rio_%'
+WHERE event_key = '${event_key}'
+    AND match_info = '${match_info}'
+    AND file_name NOT LIKE '%_rio_%'
 GROUP BY file_name
 ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC
 LIMIT 1;""",
