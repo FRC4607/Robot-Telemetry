@@ -236,6 +236,29 @@ def get_info_from_log_name(name: str) -> dict:
     """Extract timestamp and event info from the log filename."""
     base = name.rsplit(".", 1)[0]
 
+    parts = base.split("_")
+
+    # Format: EVENT_MATCH_<source>_YYYY-MM-DD_HH-MM-SS
+    # Example: MNMI2_Q62_rio_2026-04-11_14-29-13.wpilog
+    if (
+        len(parts) >= 4
+        and re.fullmatch(r"\d{4}-\d{2}-\d{2}", parts[-2])
+        and re.fullmatch(r"\d{2}-\d{2}-\d{2}", parts[-1])
+    ):
+        try:
+            dt = (
+                datetime.datetime.strptime(
+                    f"{parts[-2]}_{parts[-1]}", "%Y-%m-%d_%H-%M-%S"
+                )
+                .replace(tzinfo=datetime.timezone.utc)
+                .astimezone()
+            )
+            event = parts[0] if parts[0] != "TBD" else None
+            match = parts[1] if parts[1] != "TBD" else None
+            return {"fileName": name, "dt": dt, "event": event, "matchInfo": match}
+        except ValueError:
+            pass
+
     date_match = re.search(r"(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})", base)
     if date_match:
         try:
@@ -248,7 +271,6 @@ def get_info_from_log_name(name: str) -> dict:
         except ValueError:
             pass
 
-    parts = base.split("_")
     if len(parts) >= 3 and parts[1] != "TBD":
         try:
             dt = (
@@ -363,10 +385,16 @@ def analyze_log(path: str, groups: List[GroupInfo]) -> int:
         df = WPILogToDataFrame(reader)
     log.info("  DataFrame built: %d rows (%.1fs)", len(df), time.monotonic() - t_df)
 
-    # Extract FMS match info from the log data itself
-    event_key, match_info = extract_fms_info(df)
-    info["event"] = event_key
-    info["matchInfo"] = match_info
+    # Extract FMS match info from log data itself, but do not overwrite
+    # valid filename-derived values with off-field fallbacks.
+    fms_event, fms_match = extract_fms_info(df)
+    if fms_event != "off-field":
+        info["event"] = fms_event
+    if fms_match != "off-field":
+        info["matchInfo"] = fms_match
+
+    info["event"] = info.get("event") or "off-field"
+    info["matchInfo"] = info.get("matchInfo") or "off-field"
 
     # ── Phase 3: Evaluate metric groups in parallel ───────────────────────
     # Build the list of groups that actually need computing
