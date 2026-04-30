@@ -171,6 +171,15 @@ def _process_hoot_directory(hoot_dir: str, groups: List[GroupInfo]) -> int:
     if not hoot_files:
         return 0
 
+    # Filter out rio-only logs before conversion — they contain no useful device metrics.
+    skipped = [h for h in hoot_files if "_rio_" in os.path.basename(h)]
+    hoot_files = [h for h in hoot_files if "_rio_" not in os.path.basename(h)]
+    for h in skipped:
+        log.info("  Skipping %s (rio-only log)", os.path.basename(h))
+
+    if not hoot_files:
+        return 0
+
     log.info("[CONVERT] %s — %d hoot file(s) to convert", dirname, len(hoot_files))
 
     converted: List[str] = []
