@@ -82,7 +82,7 @@ def _brownout_count(df: pd.DataFrame) -> Tuple[int, str]:
         return -1, "metric_not_implemented"
     total_devices = len(faulted)
     max_pct = max(faulted.values())
-    stoplight = 2 if max_pct > 5.0 else (1 if max_pct > 1.0 else 0)
+    stoplight = 2 if max_pct > 15.0 else (1 if max_pct > 5.0 else 0)
     return stoplight, f"{total_devices} device(s), worst {max_pct:.1f}%"
 
 
@@ -92,7 +92,7 @@ def _brownout_devices(df: pd.DataFrame) -> Tuple[int, str]:
     if not faulted:
         return 0, "none"
     names = [_DEVICE_NAMES.get(tid, f"TalonFX-{tid}") for tid in sorted(faulted.keys())]
-    stoplight = 2 if len(names) > 6 else (1 if len(names) > 2 else 0)
+    stoplight = 2 if len(names) > 14 else (1 if len(names) > 10 else 0)
     return stoplight, ", ".join(names)
 
 
@@ -123,5 +123,5 @@ def _remote_sensor_faults(df: pd.DataFrame) -> Tuple[int, str]:
         return 0, "none"
     names = [_DEVICE_NAMES.get(tid, f"TalonFX-{tid}") for tid in sorted(faulted.keys())]
     max_pct = max(faulted.values())
-    stoplight = 2 if max_pct > 40.0 else (1 if max_pct > 10.0 else 0)
+    stoplight = 2 if max_pct > 60.0 else (1 if max_pct > 45.0 else 0)
     return stoplight, ", ".join(f"{n} ({faulted[tid]:.1f}%)" for tid, n in zip(sorted(faulted.keys()), names))

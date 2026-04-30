@@ -2215,7 +2215,7 @@
             "type": "influxdb",
             "uid": "fffnbhv0kdukgc"
           },
-          "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\" and r.file == \"${file}\" and r._field == \"value\")\n  |> keep(columns: [\"_time\"])\n  |> group()\n  |> min(column: \"_time\")\n  |> map(fn: (r) => ({_value: string(v: r._time)}))",
+          "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"_upload_tracking\" and r.file == \"${file}\" and r._field == \"min_time_us\")\n  |> last()\n  |> map(fn: (r) => ({_value: string(v: time(v: int(v: r._value) * 1000))}))",
           "refresh": 1,
           "multi": false,
           "hide": 2,
@@ -2230,7 +2230,7 @@
             "type": "influxdb",
             "uid": "fffnbhv0kdukgc"
           },
-          "query": "import \"experimental\"\nfrom(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\" and r.file == \"${file}\" and r._field == \"value\")\n  |> keep(columns: [\"_time\"])\n  |> group()\n  |> max(column: \"_time\")\n  |> map(fn: (r) => ({_value: string(v: experimental.addDuration(d: 1s, to: r._time))}))",
+          "query": "import \"experimental\"\nfrom(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"_upload_tracking\" and r.file == \"${file}\" and r._field == \"max_time_us\")\n  |> last()\n  |> map(fn: (r) => ({_value: string(v: experimental.addDuration(d: 1s, to: time(v: int(v: r._value) * 1000)))}))",
           "refresh": 1,
           "multi": false,
           "hide": 2,

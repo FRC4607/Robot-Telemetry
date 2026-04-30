@@ -62,7 +62,7 @@ def ProcessYawDrift(df: pd.DataFrame) -> Tuple[int, str]:
     drift_bias = float(stationary.mean())
     drift_per_min = abs(drift_bias) * 60  # deg/s -> deg/min
 
-    stoplight = 2 if drift_per_min > 1.0 else (1 if drift_per_min > 0.5 else 0)
+    stoplight = 2 if drift_per_min > 2.0 else (1 if drift_per_min > 1.0 else 0)
     return stoplight, f"{drift_per_min:.3f} deg/min (bias={drift_bias:.4f} deg/s)"
 
 

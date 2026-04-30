@@ -140,6 +140,8 @@ def stream_raw_data(
 
     total = 0
     lines: list[str] = []
+    min_ts_us: int | None = None
+    max_ts_us: int | None = None
 
     try:
         with open(wpilog_path, "r") as f:
@@ -197,6 +199,10 @@ def stream_raw_data(
                     tag_cache[record.entry] = prefix
 
                 abs_ts = base_us + record.timestamp
+                if min_ts_us is None or abs_ts < min_ts_us:
+                    min_ts_us = abs_ts
+                if max_ts_us is None or abs_ts > max_ts_us:
+                    max_ts_us = abs_ts
                 lines.append(f"{prefix} value={val} {abs_ts}000")
                 total += 1
 
@@ -234,6 +240,10 @@ def stream_raw_data(
                 .field("points", total)
                 .field("uploaded", True)
             )
+            if min_ts_us is not None:
+                tracking.field("min_time_us", min_ts_us)
+            if max_ts_us is not None:
+                tracking.field("max_time_us", max_ts_us)
             write_api.write(bucket=INFLUX_BUCKET, record=tracking)
 
         mm.close()
@@ -305,6 +315,8 @@ def write_raw_data(
     )
 
     total = len(df_work)
+    min_ts_us: int | None = None
+    max_ts_us: int | None = None
     log.info("  InfluxDB: writing %d points for %s ...", total, filename)
 
     try:
@@ -315,6 +327,10 @@ def write_raw_data(
             for row in df_work.itertuples():
                 # row.Index is the wpilog microsecond timestamp
                 abs_ts = base_us + row.Index
+                if min_ts_us is None or abs_ts < min_ts_us:
+                    min_ts_us = abs_ts
+                if max_ts_us is None or abs_ts > max_ts_us:
+                    max_ts_us = abs_ts
 
                 p = (
                     Point("robot_telemetry")
@@ -344,6 +360,10 @@ def write_raw_data(
                 .field("points", total)
                 .field("uploaded", True)
             )
+            if min_ts_us is not None:
+                tracking.field("min_time_us", min_ts_us)
+            if max_ts_us is not None:
+                tracking.field("max_time_us", max_ts_us)
             write_api.write(bucket=INFLUX_BUCKET, record=tracking)
 
         _uploaded_files.add(filename)

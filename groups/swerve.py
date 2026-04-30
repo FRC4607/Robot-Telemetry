@@ -19,8 +19,8 @@ pd.options.mode.chained_assignment = None
 
 # Drive slip current from TunerConstants; steer current limit is 60A (steer config)
 CURRENT_THRESHOLDS = {
-    "drive": {"max": (80, SWERVE_SLIP_CURRENT), "avg": (25, 50)},
-    "steer": {"max": (30, 60), "avg": (5, 20)},
+    "drive": {"max": (SWERVE_SLIP_CURRENT, 130), "avg": (45, 60)},
+    "steer": {"max": (40, 60), "avg": (10, 20)},
 }
 
 
@@ -112,7 +112,7 @@ def _min_supply_voltage(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
         return -1, "insufficient_data"
     smoothed = np.convolve(data.to_numpy(), np.ones(window) / window, "valid")
     min_val = float(smoothed.min())
-    stoplight = 2 if min_val < 7.0 else (1 if min_val < 8.5 else 0)
+    stoplight = 2 if min_val < 6.0 else (1 if min_val < 6.5 else 0)
     return stoplight, f"{min_val:.2f} V"
 
 

@@ -100,7 +100,7 @@ def _avg_current(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
         avg_val = float(combined["curr"].mean())
     else:
         avg_val = float(currents.mean())
-    stoplight = 2 if avg_val > 30 else (1 if avg_val > 15 else 0)
+    stoplight = 2 if avg_val > 40 else (1 if avg_val > 25 else 0)
     return stoplight, f"{avg_val:.1f} A"
 
 

@@ -57,7 +57,7 @@ def ProcessEndingVoltage(df: pd.DataFrame) -> Tuple[int, str]:
         return -1, "metric_not_implemented"
     # Average of last 50 samples
     end_v = float(data.iloc[-min(50, len(data)) :].mean())
-    stoplight = 2 if end_v < 11.0 else (1 if end_v < 11.2 else 0)
+    stoplight = 2 if end_v < 9.0 else (1 if end_v < 10.0 else 0)
     return stoplight, f"{end_v:.2f} V"
 
 
@@ -70,7 +70,7 @@ def ProcessMinVoltage(df: pd.DataFrame) -> Tuple[int, str]:
         return -1, "insufficient_data"
     smoothed = np.convolve(data.to_numpy(), np.ones(window) / window, "valid")
     min_v = float(smoothed.min())
-    stoplight = 2 if min_v < 7.0 else (1 if min_v < 8.5 else 0)
+    stoplight = 2 if min_v < 6.0 else (1 if min_v < 6.5 else 0)
     return stoplight, f"{min_v:.2f} V"
 
 
@@ -94,5 +94,5 @@ def ProcessMaxTotalCurrent(df: pd.DataFrame) -> Tuple[int, str]:
     smoothed = np.convolve(total.to_numpy(), np.ones(window) / window, "valid")
     max_val = float(smoothed.max())
 
-    stoplight = 2 if max_val > 200 else (1 if max_val > 150 else 0)
+    stoplight = 2 if max_val > 250 else (1 if max_val > 200 else 0)
     return stoplight, f"{max_val:.1f} A"

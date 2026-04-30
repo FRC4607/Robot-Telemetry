@@ -309,9 +309,9 @@ def custom_variable(name, label, options_list, multi=False):
     }
 
 
-def wrap_dashboard(title, uid, panels, templating, description="", tags=None):
+def wrap_dashboard(title, uid, panels, templating, description="", tags=None, links=None):
     """Wrap panels into a complete Grafana dashboard model."""
-    return {
+    dash = {
         "dashboard": {
             "id": None,
             "uid": uid,
@@ -329,6 +329,9 @@ def wrap_dashboard(title, uid, panels, templating, description="", tags=None):
         },
         "overwrite": True,
     }
+    if links:
+        dash["dashboard"]["links"] = links
+    return dash
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -477,13 +480,10 @@ def build_signal_explorer():
     map_line = f'  |> map(fn: (r) => ({{r with _field: ({name_expr}) + " - " + r.signal}}))'
     main_query = f'''from(bucket: "{INFLUX_BUCKET}")
   |> range(start: time(v: "${{file_start}}"), stop: time(v: "${{file_end}}"))
-  |> filter(fn: (r) => r._measurement == "robot_telemetry")
-  |> filter(fn: (r) => r.device_type == "${{device_type}}")
-  |> filter(fn: (r) => (r.device_type + "-" + r.device_id) =~ /^(${{device_id:regex}})$/)
+  |> filter(fn: (r) => r._measurement == "robot_telemetry" and r._field == "value" and r.file == "${{file}}" and r.device_type == "${{device_type}}")
   |> filter(fn: (r) => r.signal =~ /^(${{signal:regex}})$/)
-  |> filter(fn: (r) => r.file == "${{file}}")
-  |> filter(fn: (r) => r._field == "value")
-  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)
+  |> filter(fn: (r) => (r.device_type + "-" + r.device_id) =~ /^(${{device_id:regex}})$/)
+  |> aggregateWindow(every: 500ms, fn: mean, createEmpty: false)
 ''' + map_line + '''
   |> keep(columns: ["_time", "_value", "_field"])'''
 
@@ -499,46 +499,54 @@ def build_signal_explorer():
     file_query = f'''import "influxdata/influxdb/schema"
 schema.tagValues(bucket: "{INFLUX_BUCKET}", tag: "file", predicate: (r) => r._measurement == "_upload_tracking")'''
 
-    device_type_query = f'''import "influxdata/influxdb/schema"
-schema.tagValues(bucket: "{INFLUX_BUCKET}", tag: "device_type", predicate: (r) => r._measurement == "robot_telemetry")'''
-
     # Build device_id custom variable with composite DeviceType-ID values (unique)
     all_devices = sorted(DEVICE_NAMES.items(), key=lambda x: x[1])  # (key, name) sorted by name
 
-    signal_query = f'''from(bucket: "{INFLUX_BUCKET}")
-  |> range(start: 0)
-  |> filter(fn: (r) => r._measurement == "robot_telemetry")
-  |> filter(fn: (r) => r.device_type == "${{device_type}}")
-  |> keep(columns: ["signal"])
-  |> group()
-  |> distinct(column: "signal")'''
+    # Static device types and signals — avoids expensive robot_telemetry scans
+    device_types = sorted({k.split("-")[0] for k in DEVICE_NAMES})
+    device_type_options = [(t, t) for t in device_types]
 
+    all_signals = sorted(set(MOTOR_SIGNALS + CANCODER_SIGNALS + PIGEON_SIGNALS))
+    signal_options = [(s, s) for s in all_signals]
+
+    # Query _upload_tracking (tiny measurement, ~1 row per file) for file time range
+    # min_time_us / max_time_us are epoch microseconds stored at upload time
     file_start_query = f'''from(bucket: "{INFLUX_BUCKET}")
   |> range(start: 0)
-  |> filter(fn: (r) => r._measurement == "robot_telemetry" and r.file == "${{file}}" and r._field == "value")
-  |> keep(columns: ["_time"])
-  |> group()
-  |> min(column: "_time")
-  |> map(fn: (r) => ({{_value: string(v: r._time)}}))'''
+  |> filter(fn: (r) => r._measurement == "_upload_tracking" and r.file == "${{file}}" and r._field == "min_time_us")
+  |> last()
+  |> map(fn: (r) => ({{_value: string(v: time(v: int(v: r._value) * 1000))}}))'''
 
-    file_end_query = f'''from(bucket: "{INFLUX_BUCKET}")
+    file_end_query = f'''import "experimental"
+from(bucket: "{INFLUX_BUCKET}")
   |> range(start: 0)
-  |> filter(fn: (r) => r._measurement == "robot_telemetry" and r.file == "${{file}}" and r._field == "value")
-  |> keep(columns: ["_time"])
-  |> group()
-  |> max(column: "_time")
-  |> map(fn: (r) => ({{_value: string(v: experimental.addDuration(d: 1s, to: r._time))}}))'''
+  |> filter(fn: (r) => r._measurement == "_upload_tracking" and r.file == "${{file}}" and r._field == "max_time_us")
+  |> last()
+  |> map(fn: (r) => ({{_value: string(v: experimental.addDuration(d: 1s, to: time(v: int(v: r._value) * 1000)))}}))'''
 
-    # Prepend import for experimental (needed by file_end_query)
-    file_end_query = 'import "experimental"\n' + file_end_query
+    # Epoch-millisecond versions for Grafana time picker URL params
+    file_start_ms_query = f'''from(bucket: "{INFLUX_BUCKET}")
+  |> range(start: 0)
+  |> filter(fn: (r) => r._measurement == "_upload_tracking" and r.file == "${{file}}" and r._field == "min_time_us")
+  |> last()
+  |> map(fn: (r) => ({{_value: string(v: int(v: r._value) / 1000)}}))'''
+
+    file_end_ms_query = f'''import "experimental"
+from(bucket: "{INFLUX_BUCKET}")
+  |> range(start: 0)
+  |> filter(fn: (r) => r._measurement == "_upload_tracking" and r.file == "${{file}}" and r._field == "max_time_us")
+  |> last()
+  |> map(fn: (r) => ({{_value: string(v: int(v: r._value) / 1000 + 1000)}}))'''
 
     templating = [
         influx_variable("file", "Log File", file_query),
         influx_variable("file_start", "File Start", file_start_query, hide=2),
         influx_variable("file_end", "File End", file_end_query, hide=2),
-        influx_variable("device_type", "Device Type", device_type_query),
+        influx_variable("file_start_ms", "File Start (ms)", file_start_ms_query, hide=2),
+        influx_variable("file_end_ms", "File End (ms)", file_end_ms_query, hide=2),
+        custom_variable("device_type", "Device Type", device_type_options),
         custom_variable("device_id", "Device", all_devices, multi=True),
-        influx_variable("signal", "Signal", signal_query, multi=True),
+        custom_variable("signal", "Signal", signal_options, multi=True),
     ]
 
     return wrap_dashboard(
@@ -548,6 +556,20 @@ schema.tagValues(bucket: "{INFLUX_BUCKET}", tag: "device_type", predicate: (r) =
         templating,
         description="Explore any raw signal from InfluxDB. Select log file → device type → device ID → signal.",
         tags=["auto-generated", "influxdb", "explorer"],
+        links=[
+            {
+                "asDropdown": False,
+                "icon": "clock-nine",
+                "includeVars": True,
+                "keepTime": False,
+                "tags": [],
+                "targetBlank": False,
+                "title": "Snap to log file time range",
+                "tooltip": "Set the time picker to the selected log file's data range",
+                "type": "link",
+                "url": "/d/signal-explorer/signal-explorer?from=${file_start_ms}&to=${file_end_ms}",
+            }
+        ],
     )
 
 
@@ -565,21 +587,16 @@ schema.tagValues(bucket: "{INFLUX_BUCKET}", tag: "file", predicate: (r) => r._me
 
     file_start_query = f'''from(bucket: "{INFLUX_BUCKET}")
   |> range(start: 0)
-  |> filter(fn: (r) => r._measurement == "robot_telemetry" and r.file == "${{file}}" and r._field == "value")
-  |> keep(columns: ["_time"])
-  |> group()
-  |> min(column: "_time")
-  |> map(fn: (r) => ({{_value: string(v: r._time)}}))'''
+  |> filter(fn: (r) => r._measurement == "_upload_tracking" and r.file == "${{file}}" and r._field == "min_time_us")
+  |> last()
+  |> map(fn: (r) => ({{_value: string(v: time(v: int(v: r._value) * 1000))}}))'''
 
-    file_end_query = f'''from(bucket: "{INFLUX_BUCKET}")
+    file_end_query = f'''import "experimental"
+from(bucket: "{INFLUX_BUCKET}")
   |> range(start: 0)
-  |> filter(fn: (r) => r._measurement == "robot_telemetry" and r.file == "${{file}}" and r._field == "value")
-  |> keep(columns: ["_time"])
-  |> group()
-  |> max(column: "_time")
-  |> map(fn: (r) => ({{_value: string(v: experimental.addDuration(d: 1s, to: r._time))}}))'''
-
-    file_end_query = 'import "experimental"\n' + file_end_query
+  |> filter(fn: (r) => r._measurement == "_upload_tracking" and r.file == "${{file}}" and r._field == "max_time_us")
+  |> last()
+  |> map(fn: (r) => ({{_value: string(v: experimental.addDuration(d: 1s, to: time(v: int(v: r._value) * 1000)))}}))'''
 
     templating = [
         influx_variable("file", "Log File", file_query),
@@ -825,11 +842,21 @@ schema.tagValues(bucket: "{INFLUX_BUCKET}", tag: "file", predicate: (r) => r._me
 # ═══════════════════════════════════════════════════════════════════════════
 
 def main():
+    # Load .env file if present
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.isfile(env_path):
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, _, value = line.partition("=")
+                    os.environ.setdefault(key.strip(), value.strip())
+
     parser = argparse.ArgumentParser(description="Generate Grafana dashboards")
     parser.add_argument("--upload", action="store_true", help="Upload to Grafana API")
-    parser.add_argument("--grafana-url", default="http://localhost:3000", help="Grafana URL")
-    parser.add_argument("--grafana-user", default="admin")
-    parser.add_argument("--grafana-pass", default="admin")
+    parser.add_argument("--grafana-url", default=os.environ.get("GRAFANA_URL", "http://localhost:3000"), help="Grafana URL")
+    parser.add_argument("--grafana-user", default=os.environ.get("GRAFANA_USER", "admin"))
+    parser.add_argument("--grafana-pass", default=os.environ.get("GRAFANA_PASS", "admin"))
     args = parser.parse_args()
 
     os.makedirs(DASHBOARD_DIR, exist_ok=True)

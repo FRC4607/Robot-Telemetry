@@ -34,7 +34,7 @@
               "type": "influxdb",
               "uid": "fffnbhv0kdukgc"
             },
-            "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"${device_type}\")\n  |> filter(fn: (r) => (r.device_type + \"-\" + r.device_id) =~ /^(${device_id:regex})$/)\n  |> filter(fn: (r) => r.signal =~ /^(${signal:regex})$/)\n  |> filter(fn: (r) => r.file == \"${file}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> aggregateWindow(every: 200ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: (if r.device_type + \"-\" + r.device_id == \"TalonFX-23\" then \"FL Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-22\" then \"FL Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-22\" then \"FL Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-0\" then \"FR Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-1\" then \"FR Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-1\" then \"FR Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-2\" then \"BL Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-3\" then \"BL Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-3\" then \"BL Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-21\" then \"BR Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-20\" then \"BR Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-20\" then \"BR Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-15\" then \"Intake Arm\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-15\" then \"Intake Arm Enc\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-14\" then \"Intake Wheels\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-13\" then \"Indexer\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-6\" then \"Left Chamber\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-17\" then \"Right Chamber\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-7\" then \"Left Turret\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-31\" then \"Left Turret Enc 1\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-32\" then \"Left Turret Enc 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-16\" then \"Right Turret\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-41\" then \"Right Turret Enc 1\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-42\" then \"Right Turret Enc 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-8\" then \"Left Hood\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-9\" then \"Right Hood\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-4\" then \"Left Flywheel 1\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-5\" then \"Left Flywheel 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-19\" then \"Right Flywheel 1\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-18\" then \"Right Flywheel 2\" else if r.device_type + \"-\" + r.device_id == \"Pigeon2-0\" then \"Pigeon2 IMU\" else r.device_type + \"-\" + r.device_id) + \" - \" + r.signal}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
+            "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: time(v: \"${file_start}\"), stop: time(v: \"${file_end}\"))\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\" and r._field == \"value\" and r.file == \"${file}\" and r.device_type == \"${device_type}\")\n  |> filter(fn: (r) => r.signal =~ /^(${signal:regex})$/)\n  |> filter(fn: (r) => (r.device_type + \"-\" + r.device_id) =~ /^(${device_id:regex})$/)\n  |> aggregateWindow(every: 500ms, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: (if r.device_type + \"-\" + r.device_id == \"TalonFX-23\" then \"FL Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-22\" then \"FL Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-22\" then \"FL Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-0\" then \"FR Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-1\" then \"FR Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-1\" then \"FR Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-2\" then \"BL Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-3\" then \"BL Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-3\" then \"BL Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-21\" then \"BR Drive\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-20\" then \"BR Steer\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-20\" then \"BR Encoder\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-15\" then \"Intake Arm\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-15\" then \"Intake Arm Enc\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-14\" then \"Intake Wheels\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-13\" then \"Indexer\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-6\" then \"Left Chamber\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-17\" then \"Right Chamber\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-7\" then \"Left Turret\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-31\" then \"Left Turret Enc 1\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-32\" then \"Left Turret Enc 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-16\" then \"Right Turret\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-41\" then \"Right Turret Enc 1\" else if r.device_type + \"-\" + r.device_id == \"CANcoder-42\" then \"Right Turret Enc 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-8\" then \"Left Hood\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-9\" then \"Right Hood\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-4\" then \"Left Flywheel 1\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-5\" then \"Left Flywheel 2\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-19\" then \"Right Flywheel 1\" else if r.device_type + \"-\" + r.device_id == \"TalonFX-18\" then \"Right Flywheel 2\" else if r.device_type + \"-\" + r.device_id == \"Pigeon2-0\" then \"Pigeon2 IMU\" else r.device_type + \"-\" + r.device_id) + \" - \" + r.signal}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])",
             "refId": "A"
           }
         ],
@@ -87,7 +87,7 @@
             "type": "influxdb",
             "uid": "fffnbhv0kdukgc"
           },
-          "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\" and r.file == \"${file}\" and r._field == \"value\")\n  |> keep(columns: [\"_time\"])\n  |> group()\n  |> min(column: \"_time\")\n  |> map(fn: (r) => ({_value: string(v: r._time)}))",
+          "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"_upload_tracking\" and r.file == \"${file}\" and r._field == \"min_time_us\")\n  |> last()\n  |> map(fn: (r) => ({_value: string(v: time(v: int(v: r._value) * 1000))}))",
           "refresh": 1,
           "multi": false,
           "hide": 2,
@@ -102,7 +102,37 @@
             "type": "influxdb",
             "uid": "fffnbhv0kdukgc"
           },
-          "query": "import \"experimental\"\nfrom(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\" and r.file == \"${file}\" and r._field == \"value\")\n  |> keep(columns: [\"_time\"])\n  |> group()\n  |> max(column: \"_time\")\n  |> map(fn: (r) => ({_value: string(v: experimental.addDuration(d: 1s, to: r._time))}))",
+          "query": "import \"experimental\"\nfrom(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"_upload_tracking\" and r.file == \"${file}\" and r._field == \"max_time_us\")\n  |> last()\n  |> map(fn: (r) => ({_value: string(v: experimental.addDuration(d: 1s, to: time(v: int(v: r._value) * 1000)))}))",
+          "refresh": 1,
+          "multi": false,
+          "hide": 2,
+          "includeAll": false,
+          "sort": 1
+        },
+        {
+          "name": "file_start_ms",
+          "label": "File Start (ms)",
+          "type": "query",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "fffnbhv0kdukgc"
+          },
+          "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"_upload_tracking\" and r.file == \"${file}\" and r._field == \"min_time_us\")\n  |> last()\n  |> map(fn: (r) => ({_value: string(v: int(v: r._value) / 1000)}))",
+          "refresh": 1,
+          "multi": false,
+          "hide": 2,
+          "includeAll": false,
+          "sort": 1
+        },
+        {
+          "name": "file_end_ms",
+          "label": "File End (ms)",
+          "type": "query",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "fffnbhv0kdukgc"
+          },
+          "query": "import \"experimental\"\nfrom(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"_upload_tracking\" and r.file == \"${file}\" and r._field == \"max_time_us\")\n  |> last()\n  |> map(fn: (r) => ({_value: string(v: int(v: r._value) / 1000 + 1000)}))",
           "refresh": 1,
           "multi": false,
           "hide": 2,
@@ -112,17 +142,34 @@
         {
           "name": "device_type",
           "label": "Device Type",
-          "type": "query",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "fffnbhv0kdukgc"
+          "type": "custom",
+          "query": "CANcoder : CANcoder,Pigeon2 : Pigeon2,TalonFX : TalonFX",
+          "options": [
+            {
+              "text": "CANcoder",
+              "value": "CANcoder",
+              "selected": true
+            },
+            {
+              "text": "Pigeon2",
+              "value": "Pigeon2",
+              "selected": false
+            },
+            {
+              "text": "TalonFX",
+              "value": "TalonFX",
+              "selected": false
+            }
+          ],
+          "current": {
+            "text": "CANcoder",
+            "value": "CANcoder",
+            "selected": true
           },
-          "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"robot-telemetry\", tag: \"device_type\", predicate: (r) => r._measurement == \"robot_telemetry\")",
-          "refresh": 1,
+          "refresh": 0,
           "multi": false,
-          "hide": 0,
           "includeAll": false,
-          "sort": 1
+          "sort": 0
         },
         {
           "name": "device_id",
@@ -304,17 +351,74 @@
         {
           "name": "signal",
           "label": "Signal",
-          "type": "query",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "fffnbhv0kdukgc"
+          "type": "custom",
+          "query": "AngularVelocityZWorld : AngularVelocityZWorld,MotorVoltage : MotorVoltage,Pitch : Pitch,Position : Position,Roll : Roll,StatorCurrent : StatorCurrent,SupplyCurrent : SupplyCurrent,SupplyVoltage : SupplyVoltage,Velocity : Velocity,Yaw : Yaw",
+          "options": [
+            {
+              "text": "All",
+              "value": "$__all",
+              "selected": true
+            },
+            {
+              "text": "AngularVelocityZWorld",
+              "value": "AngularVelocityZWorld",
+              "selected": false
+            },
+            {
+              "text": "MotorVoltage",
+              "value": "MotorVoltage",
+              "selected": false
+            },
+            {
+              "text": "Pitch",
+              "value": "Pitch",
+              "selected": false
+            },
+            {
+              "text": "Position",
+              "value": "Position",
+              "selected": false
+            },
+            {
+              "text": "Roll",
+              "value": "Roll",
+              "selected": false
+            },
+            {
+              "text": "StatorCurrent",
+              "value": "StatorCurrent",
+              "selected": false
+            },
+            {
+              "text": "SupplyCurrent",
+              "value": "SupplyCurrent",
+              "selected": false
+            },
+            {
+              "text": "SupplyVoltage",
+              "value": "SupplyVoltage",
+              "selected": false
+            },
+            {
+              "text": "Velocity",
+              "value": "Velocity",
+              "selected": false
+            },
+            {
+              "text": "Yaw",
+              "value": "Yaw",
+              "selected": false
+            }
+          ],
+          "current": {
+            "text": "All",
+            "value": "$__all",
+            "selected": true
           },
-          "query": "from(bucket: \"robot-telemetry\")\n  |> range(start: 0)\n  |> filter(fn: (r) => r._measurement == \"robot_telemetry\")\n  |> filter(fn: (r) => r.device_type == \"${device_type}\")\n  |> keep(columns: [\"signal\"])\n  |> group()\n  |> distinct(column: \"signal\")",
-          "refresh": 1,
+          "refresh": 0,
           "multi": true,
-          "hide": 0,
           "includeAll": true,
-          "sort": 1
+          "sort": 0
         }
       ]
     },
@@ -322,7 +426,21 @@
       "from": "now-90d",
       "to": "now"
     },
-    "refresh": ""
+    "refresh": "",
+    "links": [
+      {
+        "asDropdown": false,
+        "icon": "clock-nine",
+        "includeVars": true,
+        "keepTime": false,
+        "tags": [],
+        "targetBlank": false,
+        "title": "Snap to log file time range",
+        "tooltip": "Set the time picker to the selected log file's data range",
+        "type": "link",
+        "url": "/d/signal-explorer/signal-explorer?from=${file_start_ms}&to=${file_end_ms}"
+      }
+    ]
   },
   "overwrite": true
 }
