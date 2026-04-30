@@ -16,6 +16,7 @@ from config.device_map import (
     RIGHT_FLYWHEEL_MOTOR1, RIGHT_FLYWHEEL_MOTOR2, RIGHT_FLYWHEEL_MAX_AMPERAGE,
     talon_key,
 )
+from config.metric_thresholds import get_threshold, high_is_bad
 from metric_cache import get_numeric_cached
 
 pd.options.mode.chained_assignment = None
@@ -75,7 +76,8 @@ def _max_current(df: pd.DataFrame, device_id: int, max_amperage: float) -> Tuple
         return -1, "insufficient_data"
     smoothed = np.convolve(data.to_numpy(), np.ones(window) / window, "valid")
     max_val = float(smoothed.max())
-    stoplight = 2 if max_val > max_amperage else (1 if max_val > max_amperage * 0.75 else 0)
+    warn_ratio = float(get_threshold("shared.max_current_warning_ratio", 0.75))
+    stoplight = high_is_bad(max_val, max_amperage * warn_ratio, max_amperage)
     return stoplight, f"{max_val:.1f} A"
 
 
@@ -90,13 +92,16 @@ def _avg_current(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
         combined = pd.DataFrame({"curr": currents, "volt": voltages}).interpolate(
             limit_direction="both"
         )
-        combined = combined[combined["volt"].abs() > 0.5]
+        min_active_voltage = float(get_threshold("shared.motor_active_voltage_abs_min", 0.5))
+        combined = combined[combined["volt"].abs() > min_active_voltage]
         if combined.empty:
             return 0, "0.0 A (motor inactive)"
         avg_val = float(combined["curr"].mean())
     else:
         avg_val = float(currents.mean())
-    stoplight = 2 if avg_val > 40 else (1 if avg_val > 25 else 0)
+    warning = float(get_threshold("flywheel.avg_current.warning", 25.0))
+    critical = float(get_threshold("flywheel.avg_current.critical", 40.0))
+    stoplight = high_is_bad(avg_val, warning, critical)
     return stoplight, f"{avg_val:.1f} A"
 
 
@@ -126,7 +131,9 @@ def _follower_agreement(df: pd.DataFrame, leader_id: int, follower_id: int) -> T
     if np.isnan(corr):
         return 0, "no meaningful motion"
     # Follower is opposed, so expect negative correlation
-    stoplight = 2 if abs(corr) < 0.5 else (1 if abs(corr) < 0.8 else 0)
+    warning = float(get_threshold("flywheel.follower_agreement_abs_corr.warning", 0.8))
+    critical = float(get_threshold("flywheel.follower_agreement_abs_corr.critical", 0.5))
+    stoplight = 2 if abs(corr) < critical else (1 if abs(corr) < warning else 0)
     return stoplight, f"r={corr:.3f} (opposed)"
 
 
@@ -137,10 +144,13 @@ def _velocity_error(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
     if err.empty or ref.empty:
         return -1, "no data (needs licensed owlet)"
     combined = pd.DataFrame({"err": err, "ref": ref}).interpolate(limit_direction="both").dropna()
-    active = combined[combined["ref"].abs() > 1.0]  # spinning > 1 rot/s
+    active_ref_min = float(get_threshold("shared.active_ref_abs_min", 1.0))
+    active = combined[combined["ref"].abs() > active_ref_min]
     if len(active) < 10:
         return 0, "no active spinning detected"
     mean_err = float(active["err"].abs().mean())
     peak_err = float(active["err"].abs().max())
-    stoplight = 2 if mean_err > 5.0 else (1 if mean_err > 2.0 else 0)
+    warning = float(get_threshold("flywheel.velocity_error.warning", 2.0))
+    critical = float(get_threshold("flywheel.velocity_error.critical", 5.0))
+    stoplight = high_is_bad(mean_err, warning, critical)
     return stoplight, f"avg {mean_err:.2f} rot/s, peak {peak_err:.1f} rot/s"

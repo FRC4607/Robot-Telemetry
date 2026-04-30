@@ -11,6 +11,7 @@ import sys, os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from config.device_map import pigeon_key
+from config.metric_thresholds import get_threshold, high_is_bad
 from metric_cache import get_numeric_cached
 
 pd.options.mode.chained_assignment = None
@@ -58,7 +59,9 @@ def ProcessYawDrift(df: pd.DataFrame) -> Tuple[int, str]:
     drift_bias = float(stationary.mean())
     drift_per_min = abs(drift_bias) * 60  # deg/s -> deg/min
 
-    stoplight = 2 if drift_per_min > 2.0 else (1 if drift_per_min > 1.0 else 0)
+    warning = float(get_threshold("imu.yaw_drift_deg_per_min.warning", 1.0))
+    critical = float(get_threshold("imu.yaw_drift_deg_per_min.critical", 2.0))
+    stoplight = high_is_bad(drift_per_min, warning, critical)
     return stoplight, f"{drift_per_min:.3f} deg/min (bias={drift_bias:.4f} deg/s)"
 
 

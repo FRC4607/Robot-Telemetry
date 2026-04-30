@@ -10,6 +10,7 @@ import sys, os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from config.device_map import INTAKE_WHEELS_MOTOR, INTAKE_WHEELS_MAX_AMPERAGE, talon_key
+from config.metric_thresholds import get_threshold, high_is_bad
 from metric_cache import get_numeric_cached
 
 pd.options.mode.chained_assignment = None
@@ -40,7 +41,8 @@ def ProcessMaxCurrent(df: pd.DataFrame) -> Tuple[int, str]:
         return -1, "insufficient_data"
     smoothed = np.convolve(data.to_numpy(), np.ones(window) / window, "valid")
     max_val = float(smoothed.max())
-    stoplight = 2 if max_val > INTAKE_WHEELS_MAX_AMPERAGE else (1 if max_val > INTAKE_WHEELS_MAX_AMPERAGE * 0.75 else 0)
+    warn_ratio = float(get_threshold("shared.max_current_warning_ratio", 0.75))
+    stoplight = high_is_bad(max_val, INTAKE_WHEELS_MAX_AMPERAGE * warn_ratio, INTAKE_WHEELS_MAX_AMPERAGE)
     return stoplight, f"{max_val:.1f} A"
 
 
@@ -55,13 +57,16 @@ def ProcessAvgCurrent(df: pd.DataFrame) -> Tuple[int, str]:
         combined = pd.DataFrame({"curr": currents, "volt": voltages}).interpolate(
             limit_direction="both"
         )
-        combined = combined[combined["volt"].abs() > 0.5]
+        min_active_voltage = float(get_threshold("shared.motor_active_voltage_abs_min", 0.5))
+        combined = combined[combined["volt"].abs() > min_active_voltage]
         if combined.empty:
             return 0, "0.0 A (motor inactive)"
         avg_val = float(combined["curr"].mean())
     else:
         avg_val = float(currents.mean())
-    stoplight = 2 if avg_val > 30 else (1 if avg_val > 22 else 0)
+    warning = float(get_threshold("intake_wheels.avg_current.warning", 22.0))
+    critical = float(get_threshold("intake_wheels.avg_current.critical", 30.0))
+    stoplight = high_is_bad(avg_val, warning, critical)
     return stoplight, f"{avg_val:.1f} A"
 
 
@@ -86,5 +91,7 @@ def ProcessVelocityError(df: pd.DataFrame) -> Tuple[int, str]:
         return 0, "no active spinning detected"
     mean_err = float(active["err"].abs().mean())
     peak_err = float(active["err"].abs().max())
-    stoplight = 2 if mean_err > 5.0 else (1 if mean_err > 2.0 else 0)
+    warning = float(get_threshold("intake_wheels.velocity_error.warning", 2.0))
+    critical = float(get_threshold("intake_wheels.velocity_error.critical", 5.0))
+    stoplight = high_is_bad(mean_err, warning, critical)
     return stoplight, f"avg {mean_err:.2f} rot/s, peak {peak_err:.1f} rot/s"

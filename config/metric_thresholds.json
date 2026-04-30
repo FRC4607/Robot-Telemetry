@@ -1,0 +1,220 @@
+{
+  "shared": {
+    "max_current_warning_ratio": 0.75,
+    "max_current_warning_ratio_message": "Multiplier for device max amperage used to mark warning on max stator-current checks (critical remains the device max).",
+    "motor_active_voltage_abs_min": 0.5,
+    "motor_active_voltage_abs_min_message": "Minimum absolute motor voltage to consider a motor actively running when computing active-only averages.",
+    "active_ref_abs_min": 1.0,
+    "active_ref_abs_min_message": "Minimum absolute closed-loop reference considered active for velocity-error checks.",
+    "active_ref_diff_min": 0.0001,
+    "active_ref_diff_min_message": "Minimum change in closed-loop reference to count as active motion for position-error checks.",
+    "moving_velocity_abs_min": 0.01,
+    "moving_velocity_abs_min_message": "Minimum absolute velocity used to filter out stationary samples for correlation checks.",
+    "min_active_samples": 10,
+    "min_active_samples_message": "Minimum number of active samples required before evaluating a metric to avoid noisy decisions."
+  },
+  "chamber": {
+    "avg_current": {
+      "message": "Average stator current of chamber motors while active; high values indicate sustained load or friction.",
+      "warning": 50.0,
+      "critical": 65.0
+    },
+    "velocity_error": {
+      "message": "Mean absolute closed-loop velocity error for chamber motors during active spin; higher means poorer tracking.",
+      "warning": 2.0,
+      "critical": 5.0
+    }
+  },
+  "faults": {
+    "brownout_count_pct": {
+      "message": "Worst per-device percentage of samples with bridge brownout fault active.",
+      "warning": 5.0,
+      "critical": 15.0
+    },
+    "brownout_devices_count": {
+      "message": "Number of TalonFX devices that experienced at least one bridge brownout fault sample.",
+      "warning": 10,
+      "critical": 14
+    },
+    "overtemp_fault_pct": {
+      "message": "Worst per-device percentage of samples with overtemperature fault active (no warning tier, only critical).",
+      "critical": 5.0
+    },
+    "remote_sensor_fault_pct": {
+      "message": "Worst per-device percentage of samples with remote sensor invalid fault; indicates sensor/CAN reliability issues.",
+      "warning": 45.0,
+      "critical": 60.0
+    }
+  },
+  "flywheel": {
+    "avg_current": {
+      "message": "Average flywheel leader stator current while active; elevated values can indicate drag or control issues.",
+      "warning": 25.0,
+      "critical": 40.0
+    },
+    "follower_agreement_abs_corr": {
+      "message": "Absolute correlation between leader and opposed follower flywheel velocities; lower correlation means mismatch.",
+      "warning": 0.8,
+      "critical": 0.5
+    },
+    "velocity_error": {
+      "message": "Mean absolute closed-loop velocity error while flywheels are commanded to spin.",
+      "warning": 2.0,
+      "critical": 5.0
+    }
+  },
+  "hood": {
+    "avg_current": {
+      "message": "Average hood motor stator current while active; sustained high current suggests mechanical resistance.",
+      "warning": 18.0,
+      "critical": 30.0
+    },
+    "position_error_deg": {
+      "message": "Mean absolute hood position tracking error in degrees during active repositioning.",
+      "warning": 2.0,
+      "critical": 5.0
+    }
+  },
+  "imu": {
+    "yaw_drift_deg_per_min": {
+      "message": "Estimated gyro yaw drift in degrees per minute during near-stationary periods.",
+      "warning": 1.0,
+      "critical": 2.0
+    }
+  },
+  "indexer": {
+    "avg_current": {
+      "message": "Average indexer stator current while active; used to detect excessive load.",
+      "warning": 30.0,
+      "critical": 40.0
+    },
+    "velocity_error": {
+      "message": "Mean absolute indexer closed-loop velocity error during active spin.",
+      "warning": 2.0,
+      "critical": 5.0
+    }
+  },
+  "intake_arm": {
+    "avg_current": {
+      "message": "Average intake arm motor stator current while active; high values may indicate binding or overloading.",
+      "warning": 25.0,
+      "critical": 35.0
+    },
+    "position_error_deg": {
+      "message": "Mean absolute intake arm position tracking error in degrees during active movement.",
+      "warning": 2.0,
+      "critical": 5.0
+    },
+    "encoder_alignment_corr": {
+      "message": "Correlation between Talon and CANcoder velocity signals for intake arm; lower means encoder disagreement.",
+      "warning": 0.8,
+      "critical": 0.5
+    }
+  },
+  "intake_wheels": {
+    "avg_current": {
+      "message": "Average intake wheels stator current while active.",
+      "warning": 22.0,
+      "critical": 30.0
+    },
+    "velocity_error": {
+      "message": "Mean absolute intake wheels closed-loop velocity error while spinning.",
+      "warning": 2.0,
+      "critical": 5.0
+    }
+  },
+  "odometry": {
+    "total_distance_m_warning_below": 5.0,
+    "total_distance_m_warning_below_message": "Warn if total odometry distance traveled is below this value (meters), which may indicate limited motion/log quality.",
+    "odo_update_worst_ms": {
+      "message": "Worst observed odometry update period in milliseconds; larger values indicate timing stalls.",
+      "warning": 12.0,
+      "critical": 20.0
+    },
+    "swerve_tracking_rms_mps": {
+      "message": "RMS module speed tracking error (actual vs target) in meters per second during commanded motion.",
+      "warning": 1.5,
+      "critical": 3.0
+    }
+  },
+  "power": {
+    "starting_voltage": {
+      "message": "Average bus voltage at beginning of log; low values indicate weak battery at start.",
+      "warning": 12.15,
+      "critical": 12.0
+    },
+    "ending_voltage": {
+      "message": "Average bus voltage at end of log; low values indicate heavy depletion.",
+      "warning": 10.0,
+      "critical": 9.0
+    },
+    "min_voltage": {
+      "message": "Minimum smoothed bus voltage observed during the run.",
+      "warning": 6.5,
+      "critical": 6.0
+    },
+    "max_total_current": {
+      "message": "Maximum smoothed sum of Talon supply current across all devices.",
+      "warning": 200.0,
+      "critical": 250.0
+    }
+  },
+  "swerve": {
+    "drive": {
+      "max_current": {
+        "message": "Maximum smoothed drive-motor stator current per module.",
+        "warning": 120.0,
+        "critical": 130.0
+      },
+      "avg_current": {
+        "message": "Average drive-motor stator current while active.",
+        "warning": 45.0,
+        "critical": 60.0
+      }
+    },
+    "steer": {
+      "max_current": {
+        "message": "Maximum smoothed steer-motor stator current per module.",
+        "warning": 40.0,
+        "critical": 60.0
+      },
+      "avg_current": {
+        "message": "Average steer-motor stator current while active.",
+        "warning": 10.0,
+        "critical": 20.0
+      }
+    },
+    "min_supply_voltage": {
+      "message": "Minimum smoothed module supply voltage; low values suggest brownout-like events.",
+      "warning": 6.5,
+      "critical": 6.0
+    },
+    "encoder_alignment_corr": {
+      "message": "Correlation between steer Talon and CANcoder velocity; lower values indicate sensor/alignment mismatch.",
+      "warning": 0.8,
+      "critical": 0.5
+    },
+    "steer_position_error_deg": {
+      "message": "Mean steer closed-loop position error in degrees during active steering.",
+      "warning": 1.0,
+      "critical": 3.0
+    }
+  },
+  "turret": {
+    "avg_current": {
+      "message": "Average turret motor stator current while active.",
+      "warning": 25.0,
+      "critical": 50.0
+    },
+    "position_error_deg": {
+      "message": "Mean turret closed-loop position error in degrees during active movement.",
+      "warning": 2.0,
+      "critical": 5.0
+    },
+    "encoder_alignment_corr": {
+      "message": "Correlation between turret Talon and encoder velocity signals.",
+      "warning": 0.8,
+      "critical": 0.5
+    }
+  }
+}

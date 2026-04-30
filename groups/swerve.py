@@ -14,14 +14,32 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from config.device_map import (
     SWERVE_MODULES, SWERVE_SLIP_CURRENT, talon_key, cancoder_key,
 )
+from config.metric_thresholds import get_threshold, high_is_bad, low_is_bad
 from metric_cache import get_numeric_cached
 
 pd.options.mode.chained_assignment = None
 
-# Drive slip current from TunerConstants; steer current limit is 60A (steer config)
 CURRENT_THRESHOLDS = {
-    "drive": {"max": (SWERVE_SLIP_CURRENT, 130), "avg": (45, 60)},
-    "steer": {"max": (40, 60), "avg": (10, 20)},
+    "drive": {
+        "max": (
+            float(get_threshold("swerve.drive.max_current.warning", SWERVE_SLIP_CURRENT)),
+            float(get_threshold("swerve.drive.max_current.critical", 130.0)),
+        ),
+        "avg": (
+            float(get_threshold("swerve.drive.avg_current.warning", 45.0)),
+            float(get_threshold("swerve.drive.avg_current.critical", 60.0)),
+        ),
+    },
+    "steer": {
+        "max": (
+            float(get_threshold("swerve.steer.max_current.warning", 40.0)),
+            float(get_threshold("swerve.steer.max_current.critical", 60.0)),
+        ),
+        "avg": (
+            float(get_threshold("swerve.steer.avg_current.warning", 10.0)),
+            float(get_threshold("swerve.steer.avg_current.critical", 20.0)),
+        ),
+    },
 }
 
 
@@ -72,7 +90,7 @@ def _max_current(df: pd.DataFrame, device_id: int, role: str) -> Tuple[int, str]
     smoothed = np.convolve(data.to_numpy(), np.ones(window) / window, "valid")
     max_val = float(smoothed.max())
     yellow, red = CURRENT_THRESHOLDS[role]["max"]
-    stoplight = 2 if max_val > red else (1 if max_val > yellow else 0)
+    stoplight = high_is_bad(max_val, yellow, red)
     return stoplight, f"{max_val:.1f} A"
 
 
@@ -87,14 +105,15 @@ def _avg_current(df: pd.DataFrame, device_id: int, role: str) -> Tuple[int, str]
         combined = pd.DataFrame({"curr": currents, "volt": voltages}).interpolate(
             limit_direction="both"
         )
-        combined = combined[combined["volt"].abs() > 0.5]
+        min_active_voltage = float(get_threshold("shared.motor_active_voltage_abs_min", 0.5))
+        combined = combined[combined["volt"].abs() > min_active_voltage]
         if combined.empty:
             return 0, "0.0 A (motor inactive)"
         avg_val = float(combined["curr"].mean())
     else:
         avg_val = float(currents.mean())
     yellow, red = CURRENT_THRESHOLDS[role]["avg"]
-    stoplight = 2 if avg_val > red else (1 if avg_val > yellow else 0)
+    stoplight = high_is_bad(avg_val, yellow, red)
     return stoplight, f"{avg_val:.1f} A"
 
 
@@ -108,7 +127,9 @@ def _min_supply_voltage(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
         return -1, "insufficient_data"
     smoothed = np.convolve(data.to_numpy(), np.ones(window) / window, "valid")
     min_val = float(smoothed.min())
-    stoplight = 2 if min_val < 6.0 else (1 if min_val < 6.5 else 0)
+    warning = float(get_threshold("swerve.min_supply_voltage.warning", 6.5))
+    critical = float(get_threshold("swerve.min_supply_voltage.critical", 6.0))
+    stoplight = low_is_bad(min_val, warning, critical)
     return stoplight, f"{min_val:.2f} V"
 
 
@@ -140,7 +161,9 @@ def _encoder_alignment(
     corr = float(moving["talon"].corr(moving["cancoder"]))
     if np.isnan(corr):
         return 0, "no meaningful motion"
-    stoplight = 2 if corr < 0.5 else (1 if corr < 0.8 else 0)
+    warning = float(get_threshold("swerve.encoder_alignment_corr.warning", 0.8))
+    critical = float(get_threshold("swerve.encoder_alignment_corr.critical", 0.5))
+    stoplight = 2 if corr < critical else (1 if corr < warning else 0)
     return stoplight, f"r={corr:.3f}"
 
 
@@ -161,5 +184,7 @@ def _steer_position_error(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
     peak_err = float(active["err"].abs().max())
     mean_deg = mean_err * 360.0
     peak_deg = peak_err * 360.0
-    stoplight = 2 if mean_deg > 3.0 else (1 if mean_deg > 1.0 else 0)
+    warning = float(get_threshold("swerve.steer_position_error_deg.warning", 1.0))
+    critical = float(get_threshold("swerve.steer_position_error_deg.critical", 3.0))
+    stoplight = high_is_bad(mean_deg, warning, critical)
     return stoplight, f"avg {mean_deg:.2f} deg, peak {peak_deg:.1f} deg"

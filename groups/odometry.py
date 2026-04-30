@@ -8,6 +8,7 @@ from typing import Callable, Dict, Tuple
 import pandas as pd
 import numpy as np
 import sys, os
+from config.metric_thresholds import get_threshold, high_is_bad
 from metric_cache import get_array_cached, get_numeric_cached
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -49,7 +50,8 @@ def _total_distance(df: pd.DataFrame) -> Tuple[int, str]:
         prev = pose
 
     # A normal match has roughly 20-80m of movement
-    stoplight = 1 if total < 5.0 else 0
+    warning_below = float(get_threshold("odometry.total_distance_m_warning_below", 5.0))
+    stoplight = 1 if total < warning_below else 0
     return stoplight, f"{total:.1f} m"
 
 
@@ -96,7 +98,9 @@ def _odo_update_rate(df: pd.DataFrame) -> Tuple[int, str]:
     avg_hz = 1000.0 / avg_ms if avg_ms > 0 else 0
 
     # Nominal is 250 Hz (4ms). Yellow if worst case exceeds 10ms, red if >20ms
-    stoplight = 2 if max_ms > 20 else (1 if max_ms > 12 else 0)
+    warning = float(get_threshold("odometry.odo_update_worst_ms.warning", 12.0))
+    critical = float(get_threshold("odometry.odo_update_worst_ms.critical", 20.0))
+    stoplight = high_is_bad(max_ms, warning, critical)
     return stoplight, f"{avg_hz:.0f} Hz avg, {max_ms:.1f} ms worst"
 
 
@@ -131,5 +135,7 @@ def _swerve_tracking_error(df: pd.DataFrame) -> Tuple[int, str]:
 
     rms = float(np.sqrt(np.mean(speed_errors)))
     # Threshold: <0.2 m/s RMS is great, >0.5 is concerning, >1.0 is bad
-    stoplight = 2 if rms > 3.0 else (1 if rms > 1.5 else 0)
+    warning = float(get_threshold("odometry.swerve_tracking_rms_mps.warning", 1.5))
+    critical = float(get_threshold("odometry.swerve_tracking_rms_mps.critical", 3.0))
+    stoplight = high_is_bad(rms, warning, critical)
     return stoplight, f"{rms:.3f} m/s RMS"

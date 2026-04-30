@@ -10,6 +10,7 @@ import sys, os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from config.device_map import ALL_TALON_IDS, talon_key
+from config.metric_thresholds import get_threshold, high_is_bad, low_is_bad
 from metric_cache import get_numeric_cached
 
 pd.options.mode.chained_assignment = None
@@ -43,7 +44,9 @@ def ProcessStartingVoltage(df: pd.DataFrame) -> Tuple[int, str]:
         return -1, "metric_not_implemented"
     # Average of first 50 samples
     start_v = float(data.iloc[: min(50, len(data))].mean())
-    stoplight = 2 if start_v < 12.0 else (1 if start_v < 12.15 else 0)
+    warning = float(get_threshold("power.starting_voltage.warning", 12.15))
+    critical = float(get_threshold("power.starting_voltage.critical", 12.0))
+    stoplight = low_is_bad(start_v, warning, critical)
     return stoplight, f"{start_v:.2f} V"
 
 
@@ -53,7 +56,9 @@ def ProcessEndingVoltage(df: pd.DataFrame) -> Tuple[int, str]:
         return -1, "metric_not_implemented"
     # Average of last 50 samples
     end_v = float(data.iloc[-min(50, len(data)) :].mean())
-    stoplight = 2 if end_v < 9.0 else (1 if end_v < 10.0 else 0)
+    warning = float(get_threshold("power.ending_voltage.warning", 10.0))
+    critical = float(get_threshold("power.ending_voltage.critical", 9.0))
+    stoplight = low_is_bad(end_v, warning, critical)
     return stoplight, f"{end_v:.2f} V"
 
 
@@ -66,7 +71,9 @@ def ProcessMinVoltage(df: pd.DataFrame) -> Tuple[int, str]:
         return -1, "insufficient_data"
     smoothed = np.convolve(data.to_numpy(), np.ones(window) / window, "valid")
     min_v = float(smoothed.min())
-    stoplight = 2 if min_v < 6.0 else (1 if min_v < 6.5 else 0)
+    warning = float(get_threshold("power.min_voltage.warning", 6.5))
+    critical = float(get_threshold("power.min_voltage.critical", 6.0))
+    stoplight = low_is_bad(min_v, warning, critical)
     return stoplight, f"{min_v:.2f} V"
 
 
@@ -90,5 +97,7 @@ def ProcessMaxTotalCurrent(df: pd.DataFrame) -> Tuple[int, str]:
     smoothed = np.convolve(total.to_numpy(), np.ones(window) / window, "valid")
     max_val = float(smoothed.max())
 
-    stoplight = 2 if max_val > 250 else (1 if max_val > 200 else 0)
+    warning = float(get_threshold("power.max_total_current.warning", 200.0))
+    critical = float(get_threshold("power.max_total_current.critical", 250.0))
+    stoplight = high_is_bad(max_val, warning, critical)
     return stoplight, f"{max_val:.1f} A"

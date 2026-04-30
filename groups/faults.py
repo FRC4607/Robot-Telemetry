@@ -11,6 +11,7 @@ import sys, os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from config.device_map import ALL_TALON_IDS, ALL_CANCODER_IDS, PIGEON_ID, talon_key, cancoder_key, pigeon_key
+from config.metric_thresholds import get_threshold, high_is_bad
 from metric_cache import get_numeric_cached
 
 pd.options.mode.chained_assignment = None
@@ -78,7 +79,9 @@ def _brownout_count(df: pd.DataFrame) -> Tuple[int, str]:
         return -1, "metric_not_implemented"
     total_devices = len(faulted)
     max_pct = max(faulted.values())
-    stoplight = 2 if max_pct > 15.0 else (1 if max_pct > 5.0 else 0)
+    warning = float(get_threshold("faults.brownout_count_pct.warning", 5.0))
+    critical = float(get_threshold("faults.brownout_count_pct.critical", 15.0))
+    stoplight = high_is_bad(max_pct, warning, critical)
     return stoplight, f"{total_devices} device(s), worst {max_pct:.1f}%"
 
 
@@ -88,7 +91,9 @@ def _brownout_devices(df: pd.DataFrame) -> Tuple[int, str]:
     if not faulted:
         return 0, "none"
     names = [_DEVICE_NAMES.get(tid, f"TalonFX-{tid}") for tid in sorted(faulted.keys())]
-    stoplight = 2 if len(names) > 14 else (1 if len(names) > 10 else 0)
+    warning = int(get_threshold("faults.brownout_devices_count.warning", 10))
+    critical = int(get_threshold("faults.brownout_devices_count.critical", 14))
+    stoplight = high_is_bad(float(len(names)), float(warning), float(critical))
     return stoplight, ", ".join(names)
 
 
@@ -108,7 +113,8 @@ def _overtemp_faults(df: pd.DataFrame) -> Tuple[int, str]:
         return 0, "none"
     names = [_DEVICE_NAMES.get(tid, f"TalonFX-{tid}") for tid in sorted(faulted.keys())]
     max_pct = max(faulted.values())
-    stoplight = 2 if max_pct > 5.0 else 1
+    critical = float(get_threshold("faults.overtemp_fault_pct.critical", 5.0))
+    stoplight = 2 if max_pct > critical else 1
     return stoplight, ", ".join(f"{n} ({faulted[tid]:.1f}%)" for tid, n in zip(sorted(faulted.keys()), names))
 
 
@@ -119,5 +125,7 @@ def _remote_sensor_faults(df: pd.DataFrame) -> Tuple[int, str]:
         return 0, "none"
     names = [_DEVICE_NAMES.get(tid, f"TalonFX-{tid}") for tid in sorted(faulted.keys())]
     max_pct = max(faulted.values())
-    stoplight = 2 if max_pct > 60.0 else (1 if max_pct > 45.0 else 0)
+    warning = float(get_threshold("faults.remote_sensor_fault_pct.warning", 45.0))
+    critical = float(get_threshold("faults.remote_sensor_fault_pct.critical", 60.0))
+    stoplight = high_is_bad(max_pct, warning, critical)
     return stoplight, ", ".join(f"{n} ({faulted[tid]:.1f}%)" for tid, n in zip(sorted(faulted.keys()), names))

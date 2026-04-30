@@ -15,6 +15,7 @@ from config.device_map import (
     RIGHT_HOOD_MOTOR, RIGHT_HOOD_MAX_AMPERAGE,
     talon_key,
 )
+from config.metric_thresholds import get_threshold, high_is_bad
 from metric_cache import get_numeric_cached
 
 pd.options.mode.chained_assignment = None
@@ -57,7 +58,8 @@ def _max_current(df: pd.DataFrame, device_id: int, max_amperage: float) -> Tuple
         return -1, "insufficient_data"
     smoothed = np.convolve(data.to_numpy(), np.ones(window) / window, "valid")
     max_val = float(smoothed.max())
-    stoplight = 2 if max_val > max_amperage else (1 if max_val > max_amperage * 0.75 else 0)
+    warn_ratio = float(get_threshold("shared.max_current_warning_ratio", 0.75))
+    stoplight = high_is_bad(max_val, max_amperage * warn_ratio, max_amperage)
     return stoplight, f"{max_val:.1f} A"
 
 
@@ -72,13 +74,16 @@ def _avg_current(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
         combined = pd.DataFrame({"curr": currents, "volt": voltages}).interpolate(
             limit_direction="both"
         )
-        combined = combined[combined["volt"].abs() > 0.5]
+        min_active_voltage = float(get_threshold("shared.motor_active_voltage_abs_min", 0.5))
+        combined = combined[combined["volt"].abs() > min_active_voltage]
         if combined.empty:
             return 0, "0.0 A (motor inactive)"
         avg_val = float(combined["curr"].mean())
     else:
         avg_val = float(currents.mean())
-    stoplight = 2 if avg_val > 30 else (1 if avg_val > 18 else 0)
+    warning = float(get_threshold("hood.avg_current.warning", 18.0))
+    critical = float(get_threshold("hood.avg_current.critical", 30.0))
+    stoplight = high_is_bad(avg_val, warning, critical)
     return stoplight, f"{avg_val:.1f} A"
 
 
@@ -109,5 +114,7 @@ def _position_error(df: pd.DataFrame, device_id: int) -> Tuple[int, str]:
     peak_err = float(active["err"].abs().max())
     mean_deg = mean_err * 360.0
     peak_deg = peak_err * 360.0
-    stoplight = 2 if mean_deg > 5.0 else (1 if mean_deg > 2.0 else 0)
+    warning = float(get_threshold("hood.position_error_deg.warning", 2.0))
+    critical = float(get_threshold("hood.position_error_deg.critical", 5.0))
+    stoplight = high_is_bad(mean_deg, warning, critical)
     return stoplight, f"avg {mean_deg:.2f} deg, peak {peak_deg:.1f} deg"
