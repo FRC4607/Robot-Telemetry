@@ -3,7 +3,7 @@
     "id": null,
     "uid": "match-stoplight",
     "title": "Match Stoplight",
-    "description": "Stoplight health metrics auto-focused on the newest log file.",
+    "description": "Stoplight health metrics default to latest data, with on-demand event/match/file selection.",
     "tags": [
       "auto-generated",
       "stoplight",
@@ -255,7 +255,7 @@
               "type": "grafana-postgresql-datasource",
               "uid": "ffd8jczdyabr4c"
             },
-            "rawSql": "SELECT \"group\", metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND stoplight >= 1\nORDER BY stoplight DESC, \"group\", metric;",
+            "rawSql": "SELECT \"group\", metric, value,\nCASE\n    WHEN stoplight = 2 THEN 'Critical'\n    WHEN stoplight = 1 THEN 'Warning'\n    WHEN stoplight = 0 THEN 'OK'\n    ELSE 'Unknown'\nEND AS \"Level\"\nFROM metrics\nWHERE file_name = '${file_name}' AND stoplight >= 1\nORDER BY stoplight DESC, \"group\", metric;",
             "format": "table",
             "rawQuery": true,
             "refId": "A"
@@ -349,7 +349,7 @@
                   "type": "grafana-postgresql-datasource",
                   "uid": "ffd8jczdyabr4c"
                 },
-                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'swerve'\nORDER BY stoplight DESC, metric;",
+                "rawSql": "SELECT metric, value,\nCASE\n    WHEN stoplight = 2 THEN 'Critical'\n    WHEN stoplight = 1 THEN 'Warning'\n    WHEN stoplight = 0 THEN 'OK'\n    ELSE 'Unknown'\nEND AS \"Level\"\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'swerve'\nORDER BY stoplight DESC, metric;",
                 "format": "table",
                 "rawQuery": true,
                 "refId": "A"
@@ -445,7 +445,7 @@
                   "type": "grafana-postgresql-datasource",
                   "uid": "ffd8jczdyabr4c"
                 },
-                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'flywheel'\nORDER BY stoplight DESC, metric;",
+                "rawSql": "SELECT metric, value,\nCASE\n    WHEN stoplight = 2 THEN 'Critical'\n    WHEN stoplight = 1 THEN 'Warning'\n    WHEN stoplight = 0 THEN 'OK'\n    ELSE 'Unknown'\nEND AS \"Level\"\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'flywheel'\nORDER BY stoplight DESC, metric;",
                 "format": "table",
                 "rawQuery": true,
                 "refId": "A"
@@ -541,7 +541,7 @@
                   "type": "grafana-postgresql-datasource",
                   "uid": "ffd8jczdyabr4c"
                 },
-                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'turret'\nORDER BY stoplight DESC, metric;",
+                "rawSql": "SELECT metric, value,\nCASE\n    WHEN stoplight = 2 THEN 'Critical'\n    WHEN stoplight = 1 THEN 'Warning'\n    WHEN stoplight = 0 THEN 'OK'\n    ELSE 'Unknown'\nEND AS \"Level\"\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'turret'\nORDER BY stoplight DESC, metric;",
                 "format": "table",
                 "rawQuery": true,
                 "refId": "A"
@@ -637,7 +637,7 @@
                   "type": "grafana-postgresql-datasource",
                   "uid": "ffd8jczdyabr4c"
                 },
-                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'hood'\nORDER BY stoplight DESC, metric;",
+                "rawSql": "SELECT metric, value,\nCASE\n    WHEN stoplight = 2 THEN 'Critical'\n    WHEN stoplight = 1 THEN 'Warning'\n    WHEN stoplight = 0 THEN 'OK'\n    ELSE 'Unknown'\nEND AS \"Level\"\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'hood'\nORDER BY stoplight DESC, metric;",
                 "format": "table",
                 "rawQuery": true,
                 "refId": "A"
@@ -733,7 +733,7 @@
                   "type": "grafana-postgresql-datasource",
                   "uid": "ffd8jczdyabr4c"
                 },
-                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'intake_arm'\nORDER BY stoplight DESC, metric;",
+                "rawSql": "SELECT metric, value,\nCASE\n    WHEN stoplight = 2 THEN 'Critical'\n    WHEN stoplight = 1 THEN 'Warning'\n    WHEN stoplight = 0 THEN 'OK'\n    ELSE 'Unknown'\nEND AS \"Level\"\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'intake_arm'\nORDER BY stoplight DESC, metric;",
                 "format": "table",
                 "rawQuery": true,
                 "refId": "A"
@@ -829,7 +829,7 @@
                   "type": "grafana-postgresql-datasource",
                   "uid": "ffd8jczdyabr4c"
                 },
-                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'intake_wheels'\nORDER BY stoplight DESC, metric;",
+                "rawSql": "SELECT metric, value,\nCASE\n    WHEN stoplight = 2 THEN 'Critical'\n    WHEN stoplight = 1 THEN 'Warning'\n    WHEN stoplight = 0 THEN 'OK'\n    ELSE 'Unknown'\nEND AS \"Level\"\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'intake_wheels'\nORDER BY stoplight DESC, metric;",
                 "format": "table",
                 "rawQuery": true,
                 "refId": "A"
@@ -925,7 +925,7 @@
                   "type": "grafana-postgresql-datasource",
                   "uid": "ffd8jczdyabr4c"
                 },
-                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'indexer'\nORDER BY stoplight DESC, metric;",
+                "rawSql": "SELECT metric, value,\nCASE\n    WHEN stoplight = 2 THEN 'Critical'\n    WHEN stoplight = 1 THEN 'Warning'\n    WHEN stoplight = 0 THEN 'OK'\n    ELSE 'Unknown'\nEND AS \"Level\"\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'indexer'\nORDER BY stoplight DESC, metric;",
                 "format": "table",
                 "rawQuery": true,
                 "refId": "A"
@@ -1021,7 +1021,7 @@
                   "type": "grafana-postgresql-datasource",
                   "uid": "ffd8jczdyabr4c"
                 },
-                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'chamber'\nORDER BY stoplight DESC, metric;",
+                "rawSql": "SELECT metric, value,\nCASE\n    WHEN stoplight = 2 THEN 'Critical'\n    WHEN stoplight = 1 THEN 'Warning'\n    WHEN stoplight = 0 THEN 'OK'\n    ELSE 'Unknown'\nEND AS \"Level\"\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'chamber'\nORDER BY stoplight DESC, metric;",
                 "format": "table",
                 "rawQuery": true,
                 "refId": "A"
@@ -1117,7 +1117,7 @@
                   "type": "grafana-postgresql-datasource",
                   "uid": "ffd8jczdyabr4c"
                 },
-                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'power'\nORDER BY stoplight DESC, metric;",
+                "rawSql": "SELECT metric, value,\nCASE\n    WHEN stoplight = 2 THEN 'Critical'\n    WHEN stoplight = 1 THEN 'Warning'\n    WHEN stoplight = 0 THEN 'OK'\n    ELSE 'Unknown'\nEND AS \"Level\"\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'power'\nORDER BY stoplight DESC, metric;",
                 "format": "table",
                 "rawQuery": true,
                 "refId": "A"
@@ -1213,7 +1213,7 @@
                   "type": "grafana-postgresql-datasource",
                   "uid": "ffd8jczdyabr4c"
                 },
-                "rawSql": "SELECT metric, value, stoplight\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'imu'\nORDER BY stoplight DESC, metric;",
+                "rawSql": "SELECT metric, value,\nCASE\n    WHEN stoplight = 2 THEN 'Critical'\n    WHEN stoplight = 1 THEN 'Warning'\n    WHEN stoplight = 0 THEN 'OK'\n    ELSE 'Unknown'\nEND AS \"Level\"\nFROM metrics\nWHERE file_name = '${file_name}' AND \"group\" = 'imu'\nORDER BY stoplight DESC, metric;",
                 "format": "table",
                 "rawQuery": true,
                 "refId": "A"
@@ -1288,7 +1288,7 @@
             "type": "grafana-postgresql-datasource",
             "uid": "ffd8jczdyabr4c"
           },
-          "query": "SELECT event_key\nFROM metrics\nWHERE file_name NOT LIKE '%_rio_%'\nGROUP BY event_key\nORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC\nLIMIT 1;",
+          "query": "SELECT event_key\nFROM metrics\nWHERE file_name NOT LIKE '%_rio_%'\nGROUP BY event_key\nORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC;",
           "refresh": 2,
           "multi": false,
           "includeAll": false,
@@ -1302,7 +1302,7 @@
             "type": "grafana-postgresql-datasource",
             "uid": "ffd8jczdyabr4c"
           },
-          "query": "SELECT match_info\nFROM metrics\nWHERE event_key = '${event_key}'\n    AND file_name NOT LIKE '%_rio_%'\nGROUP BY match_info\nORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC\nLIMIT 1;",
+          "query": "SELECT match_info\nFROM metrics\nWHERE event_key = '${event_key}'\n    AND file_name NOT LIKE '%_rio_%'\nGROUP BY match_info\nORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC;",
           "refresh": 2,
           "multi": false,
           "includeAll": false,
@@ -1316,7 +1316,7 @@
             "type": "grafana-postgresql-datasource",
             "uid": "ffd8jczdyabr4c"
           },
-          "query": "SELECT file_name\nFROM metrics\nWHERE event_key = '${event_key}'\n    AND match_info = '${match_info}'\n    AND file_name NOT LIKE '%_rio_%'\nGROUP BY file_name\nORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC\nLIMIT 1;",
+          "query": "SELECT file_name\nFROM metrics\nWHERE event_key = '${event_key}'\n    AND match_info = '${match_info}'\n    AND file_name NOT LIKE '%_rio_%'\nGROUP BY file_name\nORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC;",
           "refresh": 2,
           "multi": false,
           "includeAll": false,
@@ -1328,7 +1328,7 @@
       "from": "now-90d",
       "to": "now"
     },
-    "refresh": "10s"
+    "refresh": "1m"
   },
   "overwrite": true
 }

@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from config.device_map import (
     SWERVE_MODULES, SWERVE_SLIP_CURRENT, talon_key, cancoder_key,
 )
+from metric_cache import get_numeric_cached
 
 pd.options.mode.chained_assignment = None
 
@@ -25,12 +26,7 @@ CURRENT_THRESHOLDS = {
 
 
 def _get_numeric(df: pd.DataFrame, key: str) -> pd.Series:
-    subset = df[df["Key"] == key]
-    if subset.empty:
-        return pd.Series(dtype=float)
-    s = pd.to_numeric(subset["Value"], errors="coerce").dropna()
-    s.index = subset.index[: len(s)]
-    return s
+    return get_numeric_cached(df, key)
 
 
 def defineMetrics() -> Dict[str, Callable[[pd.DataFrame], Tuple[int, str]]]:

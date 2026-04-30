@@ -15,6 +15,7 @@ from config.device_map import (
     RIGHT_CHAMBER_MOTOR, RIGHT_CHAMBER_MAX_AMPERAGE,
     talon_key,
 )
+from metric_cache import get_numeric_cached
 
 pd.options.mode.chained_assignment = None
 
@@ -25,12 +26,7 @@ CHAMBERS = {
 
 
 def _get_numeric(df: pd.DataFrame, key: str) -> pd.Series:
-    subset = df[df["Key"] == key]
-    if subset.empty:
-        return pd.Series(dtype=float)
-    s = pd.to_numeric(subset["Value"], errors="coerce").dropna()
-    s.index = subset.index[: len(s)]
-    return s
+    return get_numeric_cached(df, key)
 
 
 def defineMetrics() -> Dict[str, Callable[[pd.DataFrame], Tuple[int, str]]]:

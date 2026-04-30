@@ -325,10 +325,12 @@ def extract_fms_info(df) -> Tuple[str, str]:
 def analyze_log(path: str, groups: List[GroupInfo]) -> int:
     """Run all metric groups on a single .wpilog file and write results to the DB.
 
-    Pipeline:
-      1. Stream raw data directly to InfluxDB (low memory — no DataFrame).
-      2. Build DataFrame only if metrics need computing.
-      3. Evaluate metric groups in parallel using a thread pool.
+        Pipeline:
+            1. Stream raw data to InfluxDB.
+            2. Build DataFrame if metrics need computing.
+            3. Evaluate metric groups in parallel using a thread pool.
+
+        For new files, phases 1 and 2 are overlapped to reduce wall time.
     """
     filename = os.path.basename(path)
 
@@ -363,32 +365,54 @@ def analyze_log(path: str, groups: List[GroupInfo]) -> int:
     size_mb = os.path.getsize(path) / (1024 * 1024)
     log.info("  Analyzing %s (%.1f MB) ...", filename, size_mb)
 
-    # ── Phase 1: Stream raw data to InfluxDB (no DataFrame needed) ────────
     info = get_info_from_log_name(filename)
-    if not influx_done:
-        t_influx = time.monotonic()
-        n_pts = stream_raw_data(
-            path, filename,
-            base_time=info["dt"],
-            event_key=info.get("event") or "off-field",
-            match_info=info.get("matchInfo") or "off-field",
-        )
-        log.info("  InfluxDB stream: %d points (%.1fs)", n_pts, time.monotonic() - t_influx)
 
     # If all stoplight metrics are already in PostgreSQL, we're done
     if pg_done:
+        if not influx_done:
+            t_influx = time.monotonic()
+            n_pts = stream_raw_data(
+                path, filename,
+                base_time=info["dt"],
+                event_key=info.get("event") or "off-field",
+                match_info=info.get("matchInfo") or "off-field",
+            )
+            log.info("  InfluxDB stream: %d points (%.1fs)", n_pts, time.monotonic() - t_influx)
+
         elapsed = time.monotonic() - t0
         log.info("  ✓ InfluxDB only — metrics already computed (%.1fs)", elapsed)
         return 0
 
-    # ── Phase 2: Build DataFrame for metric computation ───────────────────
-    t_df = time.monotonic()
-    with open(path, "r") as f:
-        mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-        file_hash = hashlib.md5(mm).digest()
-        reader = DataLogReader(mm)
-        df = WPILogToDataFrame(reader)
-    log.info("  DataFrame built: %d rows (%.1fs)", len(df), time.monotonic() - t_df)
+    def _build_dataframe() -> Tuple[bytes, object]:
+        t_df = time.monotonic()
+        with open(path, "rb") as f:
+            mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+            file_hash_local = hashlib.md5(mm).digest()
+            reader = DataLogReader(mm)
+            df_local = WPILogToDataFrame(reader)
+        log.info("  DataFrame built: %d rows (%.1fs)", len(df_local), time.monotonic() - t_df)
+        return file_hash_local, df_local
+
+    # ── Phase 1 + 2: Overlap Influx streaming with DataFrame build when needed ──
+    if not influx_done:
+        log.info("  Running Influx upload and DataFrame build in parallel ...")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            influx_future = pool.submit(
+                stream_raw_data,
+                path,
+                filename,
+                info["dt"],
+                info.get("event") or "off-field",
+                info.get("matchInfo") or "off-field",
+            )
+            df_future = pool.submit(_build_dataframe)
+
+            n_pts = influx_future.result()
+            file_hash, df = df_future.result()
+
+        log.info("  InfluxDB stream: %d points", n_pts)
+    else:
+        file_hash, df = _build_dataframe()
 
     # Extract FMS match info from log data itself, but do not overwrite
     # valid filename-derived values with off-field fallbacks.
@@ -405,8 +429,6 @@ def analyze_log(path: str, groups: List[GroupInfo]) -> int:
     # Build the list of groups that actually need computing
     groups_to_run = []
     for group in groups:
-        with open(group.module.__file__, "rb") as f:
-            group.hash = hashlib.file_digest(f, "md5").digest()
         with Session(engine) as sess:
             prev = sess.scalar(
                 Select(Metric.id)
@@ -422,11 +444,13 @@ def analyze_log(path: str, groups: List[GroupInfo]) -> int:
 
     def _run_group(group: GroupInfo) -> Tuple[str, GroupInfo]:
         """Evaluate all metrics in a single group. Thread-safe (read-only on df)."""
+        t_group = time.monotonic()
         metric_defs = group.module.defineMetrics()
         metrics = {}
         for name, fn in metric_defs.items():
             severity, result = fn(df)
             metrics[name] = (severity, result)
+        log.info("    Group %s: %d metrics (%.1fs)", group.name, len(metrics), time.monotonic() - t_group)
         return group.name, GroupInfo(
             name=group.name, hash=group.hash, module=group.module, metrics=metrics
         )

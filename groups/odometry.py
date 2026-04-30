@@ -8,6 +8,7 @@ from typing import Callable, Dict, Tuple
 import pandas as pd
 import numpy as np
 import sys, os
+from metric_cache import get_array_cached, get_numeric_cached
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -15,20 +16,12 @@ pd.options.mode.chained_assignment = None
 
 
 def _get_numeric(df: pd.DataFrame, key: str) -> pd.Series:
-    subset = df[df["Key"] == key]
-    if subset.empty:
-        return pd.Series(dtype=float)
-    s = pd.to_numeric(subset["Value"], errors="coerce").dropna()
-    s.index = subset.index[: len(s)]
-    return s
+    return get_numeric_cached(df, key)
 
 
 def _get_array(df: pd.DataFrame, key: str) -> list:
     """Get rows whose Value is an ndarray (DriveState signals)."""
-    subset = df[df["Key"] == key]
-    if subset.empty:
-        return []
-    return [v for v in subset["Value"] if isinstance(v, np.ndarray)]
+    return get_array_cached(df, key)
 
 
 def defineMetrics() -> Dict[str, Callable[[pd.DataFrame], Tuple[int, str]]]:

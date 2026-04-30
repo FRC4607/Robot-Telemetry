@@ -416,7 +416,13 @@ ORDER BY \"group\";""",
     # All warnings table
     panels.append(make_table_panel(
         "All Warnings & Alerts",
-        '''SELECT "group", metric, value, stoplight
+        '''SELECT "group", metric, value,
+CASE
+    WHEN stoplight = 2 THEN 'Critical'
+    WHEN stoplight = 1 THEN 'Warning'
+    WHEN stoplight = 0 THEN 'OK'
+    ELSE 'Unknown'
+END AS "Level"
 FROM metrics
 WHERE file_name = '${file_name}' AND stoplight >= 1
 ORDER BY stoplight DESC, "group", metric;''',
@@ -433,7 +439,13 @@ ORDER BY stoplight DESC, "group", metric;''',
         nice = group.replace("_", " ").title()
         inner_panels = [make_table_panel(
             f"{nice} Metrics",
-            f'''SELECT metric, value, stoplight
+            f'''SELECT metric, value,
+CASE
+    WHEN stoplight = 2 THEN 'Critical'
+    WHEN stoplight = 1 THEN 'Warning'
+    WHEN stoplight = 0 THEN 'OK'
+    ELSE 'Unknown'
+END AS "Level"
 FROM metrics
 WHERE file_name = '${{file_name}}' AND "group" = '{group}'
 ORDER BY stoplight DESC, metric;''',
@@ -453,8 +465,7 @@ ORDER BY stoplight DESC, metric;''',
 FROM metrics
 WHERE file_name NOT LIKE '%_rio_%'
 GROUP BY event_key
-ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC
-LIMIT 1;""",
+ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC;""",
                         "refresh": 2,
                         "multi": False,
                         "includeAll": False,
@@ -470,8 +481,7 @@ FROM metrics
 WHERE event_key = '${event_key}'
     AND file_name NOT LIKE '%_rio_%'
 GROUP BY match_info
-ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC
-LIMIT 1;""",
+ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC;""",
                         "refresh": 2,
                         "multi": False,
                         "includeAll": False,
@@ -488,8 +498,7 @@ WHERE event_key = '${event_key}'
     AND match_info = '${match_info}'
     AND file_name NOT LIKE '%_rio_%'
 GROUP BY file_name
-ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC
-LIMIT 1;""",
+ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC;""",
             "refresh": 2,
             "multi": False,
             "includeAll": False,
@@ -502,12 +511,12 @@ LIMIT 1;""",
         "match-stoplight",
         panels,
         templating,
-        description="Stoplight health metrics auto-focused on the newest log file.",
+        description="Stoplight health metrics default to latest data, with on-demand event/match/file selection.",
         tags=["auto-generated", "stoplight", "match"],
     )
 
     # Auto-refresh keeps the TV dashboard pinned to newly uploaded logs.
-    dash["dashboard"]["refresh"] = "10s"
+    dash["dashboard"]["refresh"] = "1m"
     return dash
 
 
