@@ -201,6 +201,38 @@ def make_stat_panel(title, query, grid_pos, datasource=None, color=None, thresho
     }
 
 
+def make_influx_stat_panel(title, flux_query, grid_pos, unit=""):
+    """Create a stat panel backed by an Influx Flux query."""
+    return {
+        "id": next_id(),
+        "type": "stat",
+        "title": title,
+        "datasource": INFLUX_DS,
+        "gridPos": grid_pos,
+        "targets": [{
+            "datasource": INFLUX_DS,
+            "query": flux_query,
+            "refId": "A",
+        }],
+        "fieldConfig": {
+            "defaults": {
+                "unit": unit,
+                "decimals": 1,
+            },
+            "overrides": [],
+        },
+        "options": {
+            "colorMode": "none",
+            "graphMode": "none",
+            "reduceOptions": {
+                "calcs": ["lastNotNull"],
+                "fields": "",
+                "values": False,
+            },
+        },
+    }
+
+
 def make_table_panel(title, query, grid_pos, datasource=None):
     """Create a table panel."""
     ds = datasource or PG_DS
@@ -382,30 +414,65 @@ LIMIT 1
 )"""
     resolved_session_expr = f"(CASE WHEN '${{log_session}}' = '__latest__' THEN {latest_session_expr} ELSE '${{log_session}}' END)"
 
+    # Compute duration from _upload_tracking min/max timestamps across all
+    # segmented sibling files for the selected log session.
+    duration_flux = f'''import "regexp"
+
+session = "${{resolved_log_session}}"
+sessionPattern = regexp.replaceAllString(r: /\\.wpilog$/, v: session, t: "(\\\\.[0-9]+)?\\\\.wpilog")
+
+tracking = from(bucket: "{INFLUX_BUCKET}")
+    |> range(start: 0)
+    |> filter(fn: (r) => r._measurement == "_upload_tracking")
+    |> filter(fn: (r) => r.file =~ regexp.compile(v: "^" + sessionPattern + "$"))
+    |> filter(fn: (r) => r._field == "min_time_us" or r._field == "max_time_us")
+
+minUs = tracking
+    |> filter(fn: (r) => r._field == "min_time_us")
+    |> group()
+    |> min(column: "_value")
+    |> map(fn: (r) => ({{r with join_key: "k"}}))
+
+maxUs = tracking
+    |> filter(fn: (r) => r._field == "max_time_us")
+    |> group()
+    |> max(column: "_value")
+    |> map(fn: (r) => ({{r with join_key: "k"}}))
+
+join(tables: {{min: minUs, max: maxUs}}, on: ["join_key"])
+    |> map(fn: (r) => ({{_value: float(v: r._value_max - r._value_min) / 1000000.0}}))
+    |> keep(columns: ["_value"])'''
+
     # Summary stats row — each colored to match its meaning
     panels.append(make_stat_panel(
         "Total Warnings",
         f"SELECT COUNT(*) FROM metrics WHERE {session_expr} = {resolved_session_expr} AND stoplight >= 1;",
-        {"h": 4, "w": 6, "x": 0, "y": 0},
+        {"h": 4, "w": 5, "x": 0, "y": 0},
         color="orange",
     ))
     panels.append(make_stat_panel(
         "Red Alerts",
         f"SELECT COUNT(*) FROM metrics WHERE {session_expr} = {resolved_session_expr} AND stoplight = 2;",
-        {"h": 4, "w": 6, "x": 6, "y": 0},
+        {"h": 4, "w": 5, "x": 5, "y": 0},
         color="red",
     ))
     panels.append(make_stat_panel(
         "Yellow Warnings",
         f"SELECT COUNT(*) FROM metrics WHERE {session_expr} = {resolved_session_expr} AND stoplight = 1;",
-        {"h": 4, "w": 6, "x": 12, "y": 0},
+        {"h": 4, "w": 5, "x": 10, "y": 0},
         color="yellow",
     ))
     panels.append(make_stat_panel(
         "Green / OK",
         f"SELECT COUNT(*) FROM metrics WHERE {session_expr} = {resolved_session_expr} AND stoplight = 0;",
-        {"h": 4, "w": 6, "x": 18, "y": 0},
+        {"h": 4, "w": 5, "x": 15, "y": 0},
         color="green",
+    ))
+    panels.append(make_influx_stat_panel(
+        "Log Duration",
+        duration_flux,
+        {"h": 4, "w": 4, "x": 20, "y": 0},
+        unit="s",
     ))
 
     # Traffic light overview — per-group max stoplight
@@ -564,6 +631,18 @@ ORDER BY sort_ts DESC;""",
             "multi": False,
             "includeAll": False,
             "sort": 0,
+        },
+        {
+            "name": "resolved_log_session",
+            "label": "Resolved Log Session",
+            "type": "query",
+            "datasource": PG_DS,
+            "query": f"SELECT {resolved_session_expr} AS resolved_log_session;",
+            "refresh": 2,
+            "multi": False,
+            "includeAll": False,
+            "sort": 0,
+            "hide": 2,
         },
     ]
 
