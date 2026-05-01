@@ -253,7 +253,10 @@ def _process_hoot_directory(hoot_dir: str, groups: List[GroupInfo]) -> int:
 # ── Log Analysis ───────────────────────────────────────────────────────────────
 def get_info_from_log_name(name: str) -> dict:
     """Extract timestamp and event info from the log filename."""
-    base = name.rsplit(".", 1)[0]
+    # Normalize segmented siblings (.2.wpilog, .3.wpilog) to the base filename
+    # so the timestamp/event regex can match correctly.
+    name_normalized = re.sub(r"\.\d+\.wpilog$", ".wpilog", name)
+    base = name_normalized.rsplit(".", 1)[0]
 
     parts = base.split("_")
 
