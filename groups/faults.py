@@ -11,7 +11,7 @@ import sys, os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from config.device_map import ALL_TALON_IDS, ALL_CANCODER_IDS, PIGEON_ID, talon_key, cancoder_key, pigeon_key
-from config.metric_thresholds import get_threshold, high_is_bad
+from config.metric_thresholds import get_threshold, high_is_bad, low_is_bad
 from metric_cache import get_numeric_cached
 
 pd.options.mode.chained_assignment = None
@@ -45,12 +45,51 @@ def _get_numeric(df: pd.DataFrame, key: str) -> pd.Series:
 
 def defineMetrics() -> Dict[str, Callable[[pd.DataFrame], Tuple[int, str]]]:
     return {
+        "Log Duration": _log_duration_health,
         "Brownout Count": _brownout_count,
         "Brownout Devices": _brownout_devices,
         "Hardware Faults": _hardware_faults,
         "Overtemp Faults": _overtemp_faults,
         "Remote Sensor Faults": _remote_sensor_faults,
     }
+
+
+def _log_duration_seconds(df: pd.DataFrame) -> float | None:
+    """Compute captured duration from wpilog timestamps (microseconds)."""
+    if df.empty or len(df.index) < 2:
+        return None
+    try:
+        start_us = int(df.index.min())
+        end_us = int(df.index.max())
+    except (TypeError, ValueError):
+        return None
+    if end_us <= start_us:
+        return 0.0
+    return (end_us - start_us) / 1_000_000.0
+
+
+def _log_duration_health(df: pd.DataFrame) -> Tuple[int, str]:
+    """Flag suspiciously short logs that often indicate reboot/restart or partial capture.
+
+    Skipped for off-field logs (no FMS data) since short pit/practice runs are expected.
+    """
+    fms_rows = df[df["Key"].str.startswith("FMS/", na=False)]
+    if fms_rows.empty:
+        return 0, "off-field (skipped)"
+
+    duration_s = _log_duration_seconds(df)
+    if duration_s is None:
+        return -1, "metric_not_implemented"
+
+    warning = float(get_threshold("faults.log_duration_s.warning", 140.0))
+    critical = float(get_threshold("faults.log_duration_s.critical", 110.0))
+    stoplight = low_is_bad(duration_s, warning, critical)
+
+    if stoplight == 0:
+        return 0, f"{duration_s:.1f}s captured"
+    if stoplight == 1:
+        return 1, f"{duration_s:.1f}s captured (short log)"
+    return 2, f"{duration_s:.1f}s captured (possible restart/partial)"
 
 
 def _check_fault_across_talons(df: pd.DataFrame, fault_signal: str) -> Dict[int, float]:

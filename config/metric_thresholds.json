@@ -26,6 +26,11 @@
     }
   },
   "faults": {
+    "log_duration_s": {
+      "message": "Total captured wpilog duration in seconds. Short logs often indicate reboot/restart or partial recording.",
+      "warning": 140.0,
+      "critical": 110.0
+    },
     "brownout_count_pct": {
       "message": "Worst per-device percentage of samples with bridge brownout fault active.",
       "warning": 5.0,
