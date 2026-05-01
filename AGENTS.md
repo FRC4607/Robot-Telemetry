@@ -60,6 +60,15 @@ MAX_METRIC_WORKERS = min(os.cpu_count() or 4, 12)
 
 Single-group workloads use a direct execution fast path.
 
+### 3.4 Upload rejection preservation
+
+If upload_server.py rejects a .hoot during owlet content validation, the file is preserved:
+1. Moved to archive/robot-logs/
+2. Renamed with suffix _rejected-processing before .hoot
+3. Input upload directory is cleaned up when left empty
+
+Expected result: un-processable uploads are retained for debugging instead of being lost.
+
 ## 4) Required Preflight Before Any Code Edit
 
 1. Read run.py and at least one impacted group module.
@@ -150,6 +159,7 @@ For every PR or patch summary, include these items:
 4. Current semantic convention:
 - avg_current and max_current usually refer to stator current.
 - power.max_total_current refers to summed supply current.
+- faults.log_duration_s flags short captured logs that may indicate restart/reboot/partial recording.
 
 ## 9) InfluxDB Dedupe Requirements
 
@@ -164,8 +174,9 @@ If deleting raw file data in Influx, delete matching _upload_tracking entries fo
 generate_dashboards.py currently assumes:
 1. Match Stoplight excludes rio files in variable queries using both patterns: _rio_ and rio_ prefix
 2. Event, Match, and Log Session default to an internal latest sentinel while displaying the real latest value text and still listing all historical options for manual selection; the latest event resolver ignores off-field, and Log Session aggregates segmented sibling files (.wpilog, .2.wpilog, .3.wpilog)
-3. Table uses Level text label for severity
-4. Periodic refresh is enabled for live operation
+3. Match Stoplight includes a Log Duration stat computed from InfluxDB _upload_tracking min_time_us/max_time_us across segmented sibling files
+4. Table uses Level text label for severity
+5. Periodic refresh is enabled for live operation
 
 When changing metric names, group names, schema fields, or datasource UIDs, regenerate and re-upload dashboards.
 
