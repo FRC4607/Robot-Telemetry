@@ -40,6 +40,7 @@ import threading
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR = os.path.join(BASE_DIR, "input-logs")
 OWLET_BIN = os.path.join(BASE_DIR, "owlet-26.1.0-linuxx86-64")
+HOOT_ARCHIVE_DIR = os.path.join(BASE_DIR, "archive", "robot-logs")
 
 ALLOWED_EXTENSIONS = {".hoot"}
 MAX_UPLOAD_SIZE = 500 * 1024 * 1024  # 500 MB
@@ -328,6 +329,50 @@ def _sanitize_filename(raw: str) -> str | None:
     return name
 
 
+def _rejected_archive_name(raw_name: str) -> str:
+    """Build archive filename with the required rejected-processing suffix."""
+    base, ext = os.path.splitext(raw_name)
+    return f"{base}_rejected-processing{ext}"
+
+
+def _archive_rejected_upload(raw_name: str, source_path: str) -> str | None:
+    """Move rejected temp upload to archive/robot-logs with a unique name."""
+    os.makedirs(HOOT_ARCHIVE_DIR, exist_ok=True)
+
+    target_name = _rejected_archive_name(raw_name)
+    target_path = os.path.join(HOOT_ARCHIVE_DIR, target_name)
+
+    if os.path.exists(target_path):
+        base, ext = os.path.splitext(target_name)
+        i = 2
+        while True:
+            candidate = os.path.join(HOOT_ARCHIVE_DIR, f"{base}.{i}{ext}")
+            if not os.path.exists(candidate):
+                target_path = candidate
+                break
+            i += 1
+
+    try:
+        os.replace(source_path, target_path)
+        return target_path
+    except OSError as e:
+        log.error("Failed to archive rejected upload %s: %s", raw_name, e)
+        try:
+            os.unlink(source_path)
+        except OSError:
+            pass
+        return None
+
+
+def _cleanup_empty_input_dir(path: str):
+    """Best-effort cleanup of empty upload directory."""
+    try:
+        if os.path.isdir(path) and not os.listdir(path):
+            os.rmdir(path)
+    except OSError:
+        pass
+
+
 class UploadHandler(http.server.BaseHTTPRequestHandler):
     """HTTP request handler for log file uploads."""
 
@@ -485,8 +530,11 @@ class UploadHandler(http.server.BaseHTTPRequestHandler):
                 # ── 7. Owlet content validation ───────────────────────────
                 validation_err = _validate_hoot_with_owlet(tmp_path)
                 if validation_err:
+                    archived_path = _archive_rejected_upload(raw_name, tmp_path)
                     log.warning("Rejected upload %s — %s", raw_name, validation_err)
-                    os.unlink(tmp_path)
+                    if archived_path:
+                        log.info("Archived rejected upload: %s", archived_path)
+                    _cleanup_empty_input_dir(dest_dir)
                     self._send_json(400, {"error": "file content is not a valid hoot log"})
                     return
 
@@ -524,6 +572,7 @@ def main():
     args = parser.parse_args()
 
     os.makedirs(INPUT_DIR, exist_ok=True)
+    os.makedirs(HOOT_ARCHIVE_DIR, exist_ok=True)
 
     server = ThreadedHTTPServer((args.host, args.port), UploadHandler)
 
