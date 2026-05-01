@@ -341,29 +341,69 @@ def wrap_dashboard(title, uid, panels, templating, description="", tags=None, li
 def build_match_stoplight():
     reset_ids()
     panels = []
+    session_expr = "regexp_replace(file_name, '\\.[0-9]+\\.wpilog$', '.wpilog')"
+
+    # Variable-resolved selectors: default to "Latest" while still allowing
+    # manual historical selections from full dropdown lists.
+    latest_event_expr = """(
+SELECT event_key
+FROM metrics
+WHERE file_name NOT LIKE '%_rio_%'
+    AND LOWER(file_name) NOT LIKE 'rio_%'
+        AND LOWER(event_key) != 'off-field'
+GROUP BY event_key
+ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC
+LIMIT 1
+)"""
+    resolved_event_expr = f"(CASE WHEN '${{event_key}}' = '__latest__' THEN {latest_event_expr} ELSE '${{event_key}}' END)"
+
+    latest_match_expr = f"""(
+SELECT match_info
+FROM metrics
+WHERE event_key = {resolved_event_expr}
+    AND file_name NOT LIKE '%_rio_%'
+    AND LOWER(file_name) NOT LIKE 'rio_%'
+GROUP BY match_info
+ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC
+LIMIT 1
+)"""
+    resolved_match_expr = f"(CASE WHEN '${{match_info}}' = '__latest__' THEN {latest_match_expr} ELSE '${{match_info}}' END)"
+
+    latest_session_expr = f"""(
+SELECT {session_expr} AS log_session
+FROM metrics
+WHERE event_key = {resolved_event_expr}
+    AND match_info = {resolved_match_expr}
+    AND file_name NOT LIKE '%_rio_%'
+    AND LOWER(file_name) NOT LIKE 'rio_%'
+GROUP BY log_session
+ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC
+LIMIT 1
+)"""
+    resolved_session_expr = f"(CASE WHEN '${{log_session}}' = '__latest__' THEN {latest_session_expr} ELSE '${{log_session}}' END)"
 
     # Summary stats row — each colored to match its meaning
     panels.append(make_stat_panel(
         "Total Warnings",
-        "SELECT COUNT(*) FROM metrics WHERE file_name = '${file_name}' AND stoplight >= 1;",
+        f"SELECT COUNT(*) FROM metrics WHERE {session_expr} = {resolved_session_expr} AND stoplight >= 1;",
         {"h": 4, "w": 6, "x": 0, "y": 0},
         color="orange",
     ))
     panels.append(make_stat_panel(
         "Red Alerts",
-        "SELECT COUNT(*) FROM metrics WHERE file_name = '${file_name}' AND stoplight = 2;",
+        f"SELECT COUNT(*) FROM metrics WHERE {session_expr} = {resolved_session_expr} AND stoplight = 2;",
         {"h": 4, "w": 6, "x": 6, "y": 0},
         color="red",
     ))
     panels.append(make_stat_panel(
         "Yellow Warnings",
-        "SELECT COUNT(*) FROM metrics WHERE file_name = '${file_name}' AND stoplight = 1;",
+        f"SELECT COUNT(*) FROM metrics WHERE {session_expr} = {resolved_session_expr} AND stoplight = 1;",
         {"h": 4, "w": 6, "x": 12, "y": 0},
         color="yellow",
     ))
     panels.append(make_stat_panel(
         "Green / OK",
-        "SELECT COUNT(*) FROM metrics WHERE file_name = '${file_name}' AND stoplight = 0;",
+        f"SELECT COUNT(*) FROM metrics WHERE {session_expr} = {resolved_session_expr} AND stoplight = 0;",
         {"h": 4, "w": 6, "x": 18, "y": 0},
         color="green",
     ))
@@ -377,9 +417,9 @@ def build_match_stoplight():
         "gridPos": {"h": 6, "w": 24, "x": 0, "y": 4},
         "targets": [{
             "datasource": PG_DS,
-            "rawSql": """SELECT \"group\" AS metric, MAX(stoplight) AS stoplight
+            "rawSql": f"""SELECT \"group\" AS metric, MAX(stoplight) AS stoplight
 FROM metrics
-WHERE file_name = '${file_name}'
+WHERE {session_expr} = {resolved_session_expr}
 GROUP BY \"group\"
 ORDER BY \"group\";""",
             "format": "table",
@@ -416,7 +456,7 @@ ORDER BY \"group\";""",
     # All warnings table
     panels.append(make_table_panel(
         "All Warnings & Alerts",
-        '''SELECT "group", metric, value,
+        f'''SELECT "group", metric, value,
 CASE
     WHEN stoplight = 2 THEN 'Critical'
     WHEN stoplight = 1 THEN 'Warning'
@@ -424,7 +464,7 @@ CASE
     ELSE 'Unknown'
 END AS "Level"
 FROM metrics
-WHERE file_name = '${file_name}' AND stoplight >= 1
+WHERE {session_expr} = {resolved_session_expr} AND stoplight >= 1
 ORDER BY stoplight DESC, "group", metric;''',
         {"h": 8, "w": 24, "x": 0, "y": 10},
     ))
@@ -439,7 +479,7 @@ ORDER BY stoplight DESC, "group", metric;''',
         nice = group.replace("_", " ").title()
         inner_panels = [make_table_panel(
             f"{nice} Metrics",
-            f'''SELECT metric, value,
+            f'''SELECT file_name, metric, value,
 CASE
     WHEN stoplight = 2 THEN 'Critical'
     WHEN stoplight = 1 THEN 'Warning'
@@ -447,8 +487,8 @@ CASE
     ELSE 'Unknown'
 END AS "Level"
 FROM metrics
-WHERE file_name = '${{file_name}}' AND "group" = '{group}'
-ORDER BY stoplight DESC, metric;''',
+WHERE {session_expr} = {resolved_session_expr} AND "group" = '{group}'
+ORDER BY stoplight DESC, file_name, metric;''',
             {"h": 8, "w": 24, "x": 0, "y": y + 1},
         )]
         panels.append(make_row_panel(nice, y, collapsed=True, panels=inner_panels))
@@ -461,11 +501,18 @@ ORDER BY stoplight DESC, metric;''',
                         "label": "Event",
                         "type": "query",
                         "datasource": PG_DS,
-                        "query": """SELECT event_key
-FROM metrics
-WHERE file_name NOT LIKE '%_rio_%'
-GROUP BY event_key
-ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC;""",
+                        "query": f"""SELECT __value, __text
+FROM (
+    SELECT '__latest__' AS __value, COALESCE({latest_event_expr}, 'Latest') AS __text, NOW() + INTERVAL '100 years' AS sort_ts
+    UNION ALL
+    SELECT event_key AS __value, event_key AS __text, MAX(COALESCE(log_timestamp, metric_timestamp)) AS sort_ts
+    FROM metrics
+    WHERE file_name NOT LIKE '%_rio_%'
+        AND LOWER(file_name) NOT LIKE 'rio_%'
+        AND event_key <> COALESCE({latest_event_expr}, '')
+    GROUP BY event_key
+) q
+ORDER BY sort_ts DESC;""",
                         "refresh": 2,
                         "multi": False,
                         "includeAll": False,
@@ -476,29 +523,43 @@ ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC;""",
                         "label": "Match",
                         "type": "query",
                         "datasource": PG_DS,
-                        "query": """SELECT match_info
-FROM metrics
-WHERE event_key = '${event_key}'
-    AND file_name NOT LIKE '%_rio_%'
-GROUP BY match_info
-ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC;""",
+                        "query": f"""SELECT __value, __text
+FROM (
+    SELECT '__latest__' AS __value, COALESCE({latest_match_expr}, 'Latest') AS __text, NOW() + INTERVAL '100 years' AS sort_ts
+    UNION ALL
+    SELECT match_info AS __value, match_info AS __text, MAX(COALESCE(log_timestamp, metric_timestamp)) AS sort_ts
+    FROM metrics
+    WHERE event_key = {resolved_event_expr}
+        AND file_name NOT LIKE '%_rio_%'
+        AND LOWER(file_name) NOT LIKE 'rio_%'
+        AND match_info <> COALESCE({latest_match_expr}, '')
+    GROUP BY match_info
+) q
+ORDER BY sort_ts DESC;""",
                         "refresh": 2,
                         "multi": False,
                         "includeAll": False,
                         "sort": 0,
                 },
         {
-            "name": "file_name",
-            "label": "Log File",
+            "name": "log_session",
+            "label": "Log Session",
             "type": "query",
             "datasource": PG_DS,
-            "query": """SELECT file_name
-FROM metrics
-WHERE event_key = '${event_key}'
-    AND match_info = '${match_info}'
-    AND file_name NOT LIKE '%_rio_%'
-GROUP BY file_name
-ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC;""",
+            "query": f"""SELECT __value, __text
+FROM (
+    SELECT '__latest__' AS __value, COALESCE({latest_session_expr}, 'Latest') AS __text, NOW() + INTERVAL '100 years' AS sort_ts
+    UNION ALL
+    SELECT {session_expr} AS __value, {session_expr} AS __text, MAX(COALESCE(log_timestamp, metric_timestamp)) AS sort_ts
+    FROM metrics
+    WHERE event_key = {resolved_event_expr}
+        AND match_info = {resolved_match_expr}
+        AND file_name NOT LIKE '%_rio_%'
+        AND LOWER(file_name) NOT LIKE 'rio_%'
+        AND {session_expr} <> COALESCE({latest_session_expr}, '')
+    GROUP BY {session_expr}
+) q
+ORDER BY sort_ts DESC;""",
             "refresh": 2,
             "multi": False,
             "includeAll": False,
@@ -511,7 +572,7 @@ ORDER BY MAX(COALESCE(log_timestamp, metric_timestamp)) DESC;""",
         "match-stoplight",
         panels,
         templating,
-        description="Stoplight health metrics default to latest data, with on-demand event/match/file selection.",
+        description="Stoplight health metrics stay pinned to the latest log session for the selected event/match.",
         tags=["auto-generated", "stoplight", "match"],
     )
 

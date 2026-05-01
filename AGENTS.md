@@ -33,14 +33,15 @@ System flow:
 
 ## 3) Current Behavior That Must Be Preserved
 
-### 3.1 rio filtering
+### 3.1 rio filtering and auto-deletion
 
-rio-only logs are filtered in two stages in run.py:
-1. Pre-conversion skip in _process_hoot_directory
-2. Analysis-time safety skip in analyze_log
+rio-only logs are handled in three stages in run.py:
+1. Auto-deletion in initial_scan (startup): rio .hoot files are deleted from input-logs/ before any processing
+2. Auto-deletion in _process_hoot_directory (watch mode): rio .hoot files are deleted when detected during runtime uploads
+3. Analysis-time safety skip in analyze_log: additional protection layer that skips any rio signals found in processed files
 
-Expected result: files containing _rio_ should not produce new metrics and should
-not be converted from .hoot when seen in hoot directories.
+Expected result: files containing _rio_ should not accumulate on disk, should not produce new metrics, and should
+not be converted from .hoot when seen in hoot directories. Detection covers both patterns: names containing _rio_ and names starting with rio_. All rio files are deleted with explicit logging.
 
 ### 3.2 Reprocessing model
 
@@ -161,8 +162,8 @@ If deleting raw file data in Influx, delete matching _upload_tracking entries fo
 ## 10) Dashboard Guardrails
 
 generate_dashboards.py currently assumes:
-1. Match Stoplight excludes _rio_ in variable queries
-2. File selection is newest-first
+1. Match Stoplight excludes rio files in variable queries using both patterns: _rio_ and rio_ prefix
+2. Event, Match, and Log Session default to an internal latest sentinel while displaying the real latest value text and still listing all historical options for manual selection; the latest event resolver ignores off-field, and Log Session aggregates segmented sibling files (.wpilog, .2.wpilog, .3.wpilog)
 3. Table uses Level text label for severity
 4. Periodic refresh is enabled for live operation
 

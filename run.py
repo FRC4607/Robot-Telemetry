@@ -97,6 +97,12 @@ for _d in [INPUT_DIR, LOGS_DIR, METRICS_DIR, HOOT_ARCHIVE]:
     os.makedirs(_d, exist_ok=True)
 
 
+def is_rio_filename(path_or_name: str) -> bool:
+    """Return True for rio-only logs by known naming patterns."""
+    name = os.path.basename(path_or_name).lower()
+    return "_rio_" in name or name.startswith("rio_")
+
+
 # ── Data Classes ───────────────────────────────────────────────────────────────
 @dataclass
 class GroupInfo:
@@ -172,10 +178,14 @@ def _process_hoot_directory(hoot_dir: str, groups: List[GroupInfo]) -> int:
         return 0
 
     # Filter out rio-only logs before conversion — they contain no useful device metrics.
-    skipped = [h for h in hoot_files if "_rio_" in os.path.basename(h)]
-    hoot_files = [h for h in hoot_files if "_rio_" not in os.path.basename(h)]
+    skipped = [h for h in hoot_files if is_rio_filename(h)]
+    hoot_files = [h for h in hoot_files if not is_rio_filename(h)]
     for h in skipped:
-        log.info("  Skipping %s (rio-only log)", os.path.basename(h))
+        try:
+            os.remove(h)
+            log.info("  Deleted rio hoot file: %s", os.path.basename(h))
+        except OSError as e:
+            log.warning("  Failed to delete rio file %s: %s", os.path.basename(h), e)
 
     if not hoot_files:
         return 0
@@ -344,7 +354,7 @@ def analyze_log(path: str, groups: List[GroupInfo]) -> int:
     filename = os.path.basename(path)
 
     # Skip driverstation rio-side logs; they don't contain useful device metrics.
-    if "_rio_" in filename:
+    if is_rio_filename(filename):
         log.info("  Skipping %s (rio-only log)", filename)
         return 0
 
@@ -368,7 +378,15 @@ def analyze_log(path: str, groups: List[GroupInfo]) -> int:
     influx_done = is_file_uploaded(filename)
 
     if pg_done and influx_done:
+        log.info("  Skipping %s — already complete in PostgreSQL and InfluxDB", filename)
         return 0
+
+    if pg_done and not influx_done:
+        log.info("  Partial state %s — PostgreSQL done, InfluxDB missing", filename)
+    elif influx_done and not pg_done:
+        log.info("  Partial state %s — InfluxDB done, PostgreSQL missing", filename)
+    else:
+        log.info("  New state %s — not complete in PostgreSQL or InfluxDB", filename)
 
     t0 = time.monotonic()
     size_mb = os.path.getsize(path) / (1024 * 1024)
@@ -701,6 +719,30 @@ def initial_scan(groups: List[GroupInfo]):
             if any(f.endswith(".hoot") for f in filenames):
                 pending.append(dirpath)
         pending.sort()
+
+        # Delete rio-only hoot files and directories
+        rio_deleted = 0
+        for hoot_dir in list(pending):
+            hoot_files = sorted(glob.glob(os.path.join(hoot_dir, "*.hoot")))
+            rio_files = [h for h in hoot_files if is_rio_filename(h)]
+            for rio_file in rio_files:
+                try:
+                    os.remove(rio_file)
+                    log.info("  Deleted rio hoot file: %s", os.path.basename(rio_file))
+                    rio_deleted += 1
+                except OSError as e:
+                    log.warning("  Failed to delete %s: %s", os.path.basename(rio_file), e)
+            # If directory now has no .hoot files, remove it
+            remaining_hoots = sorted(glob.glob(os.path.join(hoot_dir, "*.hoot")))
+            if not remaining_hoots:
+                try:
+                    os.rmdir(hoot_dir)
+                    log.info("  Deleted empty rio hoot directory: %s", os.path.basename(hoot_dir))
+                    pending.remove(hoot_dir)
+                except OSError as e:
+                    log.warning("  Failed to delete hoot directory %s: %s", os.path.basename(hoot_dir), e)
+        if rio_deleted:
+            log.info("Initial scan: deleted %d rio hoot file(s)", rio_deleted)
 
         if pending:
             log.info("Initial scan: %d hoot directories to process", len(pending))
